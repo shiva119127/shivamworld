@@ -333,14 +333,18 @@ export const MainHubScene: React.FC = () => {
     >
       {/* Background stars / slow moving drift fog */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(40,40,40,0.15)_0%,transparent_70%)] pointer-events-none z-0" />
-      <div className="absolute inset-0 bg-[url('/loading_bg.png')] bg-cover opacity-5 pointer-events-none map-drift z-0" />
+      <div 
+        style={{ willChange: "transform, opacity" }}
+        className="absolute inset-0 bg-[url('/loading_bg.png')] bg-cover opacity-5 pointer-events-none map-drift z-0" 
+      />
 
       {/* Map Content Layer with smooth zoom transitions */}
       <div 
         style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
           transition: isDragging ? "none" : "transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)",
-          transformOrigin: "center center"
+          transformOrigin: "center center",
+          willChange: "transform"
         }}
         className="absolute w-[1000px] h-[600px] pointer-events-none"
       >
@@ -405,116 +409,122 @@ export const MainHubScene: React.FC = () => {
                 onMouseLeave={() => handleNodeHover(null, -1)}
                 onClick={() => handleNodeClick(dest)}
               >
-                {/* Highlight Halo for hovered elements */}
-                {isHovered && !isLegendsLocked && (
-                  <ellipse cx="0" cy="10" rx="50" ry="24" fill="none" stroke="#ffffff" strokeWidth="0.5" className="map-pulse" />
-                )}
+                {/* Visual drawings block (pointer events disabled to prevent child hover flicker) */}
+                <g className="pointer-events-none">
+                  {/* Highlight Halo for hovered elements */}
+                  {isHovered && !isLegendsLocked && (
+                    <ellipse cx="0" cy="10" rx="50" ry="24" fill="none" stroke="#ffffff" strokeWidth="0.5" className="map-pulse" />
+                  )}
 
-                {/* Draw Visual Architecture */}
-                {dest.visualName === "citadel" && (
-                  <g>
-                    <path d="M-40,10 L0,-10 L40,10 L0,30 Z" fill="#141414" stroke="#242424" />
-                    <path d="M-40,10 L-40,20 L0,40 L0,30 Z" fill="#0c0c0c" />
-                    <path d="M40,10 L40,20 L0,40 L0,30 Z" fill="#080808" />
-                    <rect x="-24" y="-35" width="11" height="40" fill="#121212" stroke="#242424" />
-                    <polygon points="-25,-35 -18.5,-47 -12,-35" fill="#1a1a1a" stroke="#242424" />
-                    <rect x="13" y="-35" width="11" height="40" fill="#121212" stroke="#242424" />
-                    <polygon points="12,-35 18.5,-47 25,-35" fill="#1a1a1a" stroke="#242424" />
-                    <rect x="-9" y="-50" width="18" height="55" fill="#161616" stroke="#242424" />
-                    <polygon points="-11,-50 0,-64 11,-50" fill="#1c1c1c" stroke="#242424" />
-                    <rect x="-3" y="-35" width="6" height="8" fill="#ffaa44" className="map-flicker" />
-                    <rect x="-19" y="-20" width="3" height="5" fill="#ff9933" className="map-flicker" />
-                    <rect x="20" y="-20" width="3" height="5" fill="#ff9933" className="map-flicker" />
-                  </g>
-                )}
-
-                {dest.visualName === "forest" && (
-                  <g>
-                    <path d="M-40,10 L0,-10 L40,10 L0,30 Z" fill="#101310" stroke="#202620" />
-                    <polygon points="-24,2 -15,-22 -6,2" fill="#121a12" stroke="#202820" />
-                    <polygon points="-22,-8 -15,-30 -8,-8" fill="#152215" stroke="#202820" />
-                    <polygon points="6,12 15,-12 24,12" fill="#121a12" stroke="#202820" />
-                    <polygon points="8,2 15,-20 22,2" fill="#152215" stroke="#202820" />
-                    <rect x="-10" y="-26" width="5" height="22" fill="#1c1c1c" stroke="#242424" />
-                    <circle cx="0" cy="10" r="3.5" fill="#ff6611" className="map-flicker" />
-                    <path d="M-2,10 L0,5 L2,10 Z" fill="#ffaa33" className="map-flicker" />
-                  </g>
-                )}
-
-                {dest.visualName === "lab" && (
-                  <g>
-                    <path d="M-40,10 L0,-10 L40,10 L0,30 Z" fill="#101216" stroke="#20242e" />
-                    <path d="M-20,5 A20,20 0 0,1 20,5 Z" fill="#151b24" fillOpacity="0.3" stroke="#2563eb" strokeWidth="1.2" />
-                    <ellipse cx="0" cy="0" rx="28" ry="11" stroke="#3b82f6" strokeWidth="0.6" fill="none" className="map-pulse" />
-                    <ellipse cx="0" cy="0" rx="18" ry="7" stroke="#60a5fa" strokeWidth="0.4" fill="none" className="map-pulse" />
-                    <rect x="-2" y="-20" width="4" height="14" fill="#1e293b" stroke="#2563eb" />
-                    <circle cx="0" cy="-20" r="2.5" fill="#60a5fa" className="map-pulse" />
-                  </g>
-                )}
-
-                {dest.visualName === "trail" && (
-                  <g>
-                    <path d="M-40,20 L-25,-10 L5,-15 L40,15 L10,35 Z" fill="#141414" stroke="#242424" />
-                    <path d="M-25,-10 L-15,-32 L10,-28 L5,-15 Z" fill="#1a1a1a" stroke="#242424" />
-                    <line x1="-8" y1="5" x2="8" y2="5" stroke="#2a2a2a" strokeWidth="1.8" />
-                    <line x1="-6" y1="-2" x2="6" y2="-2" stroke="#2a2a2a" strokeWidth="1.8" />
-                    <line x1="-4" y1="-9" x2="4" y2="-9" stroke="#2a2a2a" strokeWidth="1.8" />
-                    <line x1="-18" y1="-12" x2="-18" y2="-4" stroke="#101010" strokeWidth="1.5" />
-                    <circle cx="-18" cy="-14" r="2.5" fill="#ff7722" className="map-flicker" />
-                    <line x1="18" y1="5" x2="18" y2="13" stroke="#101010" strokeWidth="1.5" />
-                    <circle cx="18" cy="3" r="2.5" fill="#ff7722" className="map-flicker" />
-                  </g>
-                )}
-
-                {dest.visualName === "legends" && (
-                  <g>
-                    <path d="M-40,10 L0,-10 L40,10 L0,30 Z" fill="#1b1713" stroke="#28221b" />
-                    <rect x="-20" y="-30" width="5" height="32" fill="#141414" stroke="#242424" />
-                    <rect x="15" y="-30" width="5" height="32" fill="#141414" stroke="#242424" />
-                    <rect x="-7" y="-38" width="14" height="5" fill="#202020" stroke="#2c2c2c" />
-                    <path d="M-5,10 L-3,0 L3,0 L5,10 Z" fill="#1a1a1a" stroke="#242424" />
-                    <circle cx="0" cy="-6" r="3.5" fill="#ffb700" className="map-pulse" />
-                    <polygon points="-3,-5 3,-5 2,-1 -2,-1" fill="#ff9f00" />
-                  </g>
-                )}
-
-                {dest.visualName === "portal" && (
-                  <g>
-                    <path d="M-40,10 L0,-10 L40,10 L0,30 Z" fill="#14101d" stroke="#241c30" />
-                    <circle cx="0" cy="-10" r="22" stroke="#7c3aed" strokeWidth="1.5" fill="none" strokeDasharray="24 8" className="map-float" />
-                    <circle cx="0" cy="-10" r="16" stroke="#a78bfa" strokeWidth="0.8" fill="none" strokeDasharray="12 4" className="map-pulse" />
-                    <circle cx="-12" cy="-22" r="1.2" fill="#a78bfa" className="map-flicker" />
-                    <circle cx="12" cy="-26" r="0.8" fill="#ddd6fe" className="map-pulse" />
-                    <circle cx="-4" cy="-35" r="1" fill="#a78bfa" className="map-float" />
-                  </g>
-                )}
-
-                {/* Text Labels under locations */}
-                <g transform="translate(0, 36)">
-                  <rect x="-50" y="-10" width="100" height="20" rx="3" fill="#101010" stroke="#242424" strokeWidth="1" />
-                  <text 
-                    textAnchor="middle" 
-                    y="3" 
-                    fill={isHovered && !isLegendsLocked ? "#ffffff" : "#a3a3a3"} 
-                    fontSize="7" 
-                    fontFamily="monospace" 
-                    letterSpacing="1"
-                    fontWeight="bold"
-                    className="transition-colors duration-200"
-                  >
-                    {dest.name}
-                  </text>
-                  
-                  {/* Lock Indicator icon overlay */}
-                  {isLegendsLocked && (
-                    <g transform="translate(40, -15)">
-                      <circle cx="0" cy="0" r="7" fill="#151515" stroke="#242424" />
-                      <foreignObject x="-4" y="-5.5" width="8" height="11">
-                        <Lock className="text-[#8a8a9d]" size={8} />
-                      </foreignObject>
+                  {/* Draw Visual Architecture */}
+                  {dest.visualName === "citadel" && (
+                    <g>
+                      <path d="M-40,10 L0,-10 L40,10 L0,30 Z" fill="#141414" stroke="#242424" />
+                      <path d="M-40,10 L-40,20 L0,40 L0,30 Z" fill="#0c0c0c" />
+                      <path d="M40,10 L40,20 L0,40 L0,30 Z" fill="#080808" />
+                      <rect x="-24" y="-35" width="11" height="40" fill="#121212" stroke="#242424" />
+                      <polygon points="-25,-35 -18.5,-47 -12,-35" fill="#1a1a1a" stroke="#242424" />
+                      <rect x="13" y="-35" width="11" height="40" fill="#121212" stroke="#242424" />
+                      <polygon points="12,-35 18.5,-47 25,-35" fill="#1a1a1a" stroke="#242424" />
+                      <rect x="-9" y="-50" width="18" height="55" fill="#161616" stroke="#242424" />
+                      <polygon points="-11,-50 0,-64 11,-50" fill="#1c1c1c" stroke="#242424" />
+                      <rect x="-3" y="-35" width="6" height="8" fill="#ffaa44" className="map-flicker" />
+                      <rect x="-19" y="-20" width="3" height="5" fill="#ff9933" className="map-flicker" />
+                      <rect x="20" y="-20" width="3" height="5" fill="#ff9933" className="map-flicker" />
                     </g>
                   )}
+
+                  {dest.visualName === "forest" && (
+                    <g>
+                      <path d="M-40,10 L0,-10 L40,10 L0,30 Z" fill="#101310" stroke="#202620" />
+                      <polygon points="-24,2 -15,-22 -6,2" fill="#121a12" stroke="#202820" />
+                      <polygon points="-22,-8 -15,-30 -8,-8" fill="#152215" stroke="#202820" />
+                      <polygon points="6,12 15,-12 24,12" fill="#121a12" stroke="#202820" />
+                      <polygon points="8,2 15,-20 22,2" fill="#152215" stroke="#202820" />
+                      <rect x="-10" y="-26" width="5" height="22" fill="#1c1c1c" stroke="#242424" />
+                      <circle cx="0" cy="10" r="3.5" fill="#ff6611" className="map-flicker" />
+                      <path d="M-2,10 L0,5 L2,10 Z" fill="#ffaa33" className="map-flicker" />
+                    </g>
+                  )}
+
+                  {dest.visualName === "lab" && (
+                    <g>
+                      <path d="M-40,10 L0,-10 L40,10 L0,30 Z" fill="#101216" stroke="#20242e" />
+                      <path d="M-20,5 A20,20 0 0,1 20,5 Z" fill="#151b24" fillOpacity="0.3" stroke="#2563eb" strokeWidth="1.2" />
+                      <ellipse cx="0" cy="0" rx="28" ry="11" stroke="#3b82f6" strokeWidth="0.6" fill="none" className="map-pulse" />
+                      <ellipse cx="0" cy="0" rx="18" ry="7" stroke="#60a5fa" strokeWidth="0.4" fill="none" className="map-pulse" />
+                      <rect x="-2" y="-20" width="4" height="14" fill="#1e293b" stroke="#2563eb" />
+                      <circle cx="0" cy="-20" r="2.5" fill="#60a5fa" className="map-pulse" />
+                    </g>
+                  )}
+
+                  {dest.visualName === "trail" && (
+                    <g>
+                      <path d="M-40,20 L-25,-10 L5,-15 L40,15 L10,35 Z" fill="#141414" stroke="#242424" />
+                      <path d="M-25,-10 L-15,-32 L10,-28 L5,-15 Z" fill="#1a1a1a" stroke="#242424" />
+                      <line x1="-8" y1="5" x2="8" y2="5" stroke="#2a2a2a" strokeWidth="1.8" />
+                      <line x1="-6" y1="-2" x2="6" y2="-2" stroke="#2a2a2a" strokeWidth="1.8" />
+                      <line x1="-4" y1="-9" x2="4" y2="-9" stroke="#2a2a2a" strokeWidth="1.8" />
+                      <line x1="-18" y1="-12" x2="-18" y2="-4" stroke="#101010" strokeWidth="1.5" />
+                      <circle cx="-18" cy="-14" r="2.5" fill="#ff7722" className="map-flicker" />
+                      <line x1="18" y1="5" x2="18" y2="13" stroke="#101010" strokeWidth="1.5" />
+                      <circle cx="18" cy="3" r="2.5" fill="#ff7722" className="map-flicker" />
+                    </g>
+                  )}
+
+                  {dest.visualName === "legends" && (
+                    <g>
+                      <path d="M-40,10 L0,-10 L40,10 L0,30 Z" fill="#1b1713" stroke="#28221b" />
+                      <rect x="-20" y="-30" width="5" height="32" fill="#141414" stroke="#242424" />
+                      <rect x="15" y="-30" width="5" height="32" fill="#141414" stroke="#242424" />
+                      <rect x="-7" y="-38" width="14" height="5" fill="#202020" stroke="#2c2c2c" />
+                      <path d="M-5,10 L-3,0 L3,0 L5,10 Z" fill="#1a1a1a" stroke="#242424" />
+                      <circle cx="0" cy="-6" r="3.5" fill="#ffb700" className="map-pulse" />
+                      <polygon points="-3,-5 3,-5 2,-1 -2,-1" fill="#ff9f00" />
+                    </g>
+                  )}
+
+                  {dest.visualName === "portal" && (
+                    <g>
+                      <path d="M-40,10 L0,-10 L40,10 L0,30 Z" fill="#14101d" stroke="#241c30" />
+                      <circle cx="0" cy="-10" r="22" stroke="#7c3aed" strokeWidth="1.5" fill="none" strokeDasharray="24 8" className="map-float" />
+                      <circle cx="0" cy="-10" r="16" stroke="#a78bfa" strokeWidth="0.8" fill="none" strokeDasharray="12 4" className="map-pulse" />
+                      <circle cx="-12" cy="-22" r="1.2" fill="#a78bfa" className="map-flicker" />
+                      <circle cx="12" cy="-26" r="0.8" fill="#ddd6fe" className="map-pulse" />
+                      <circle cx="-4" cy="-35" r="1" fill="#a78bfa" className="map-float" />
+                    </g>
+                  )}
+
+                  {/* Text Labels under locations */}
+                  <g transform="translate(0, 36)">
+                    <rect x="-50" y="-10" width="100" height="20" rx="3" fill="#101010" stroke="#242424" strokeWidth="1" />
+                    <text 
+                      textAnchor="middle" 
+                      y="3" 
+                      fill={isHovered && !isLegendsLocked ? "#ffffff" : "#a3a3a3"} 
+                      fontSize="7" 
+                      fontFamily="monospace" 
+                      letterSpacing="1"
+                      fontWeight="bold"
+                      className="transition-colors duration-200"
+                    >
+                      {dest.name}
+                    </text>
+                    
+                    {/* Lock Indicator icon overlay */}
+                    {isLegendsLocked && (
+                      <g transform="translate(40, -15)">
+                        <circle cx="0" cy="0" r="7" fill="#151515" stroke="#242424" />
+                        <foreignObject x="-4" y="-5.5" width="8" height="11">
+                          <Lock className="text-[#8a8a9d]" size={8} />
+                        </foreignObject>
+                      </g>
+                    )}
+                  </g>
                 </g>
+
+                {/* Flat transparent interactive hitbox to prevent nested flickering */}
+                <ellipse cx="0" cy="15" rx="55" ry="32" fill="transparent" className="pointer-events-auto cursor-pointer" />
               </g>
             );
           })}
