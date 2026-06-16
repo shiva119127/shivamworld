@@ -118,49 +118,38 @@ export const MainHubScene: React.FC = () => {
     }
   ];
 
-  // Auto-centering pan coordinates based on active hovered node to simulate zoom camera focus
+  // Center camera dynamically on mount, target change, or window resize
   useEffect(() => {
-    if (transitioningTo) {
-      // Zoom deep into clicked node
-      setZoom(1.8);
-      setPan({
-        x: -transitioningTo.x * 1.8 + (window.innerWidth / 2),
-        y: -transitioningTo.y * 1.8 + (window.innerHeight / 2)
-      });
-    } else if (hoveredDest) {
-      // Pan camera slightly toward hovered destination
-      const scaleVal = 1.15;
-      setZoom(scaleVal);
-      setPan({
-        x: -hoveredDest.x * scaleVal + (window.innerWidth / 2),
-        y: -hoveredDest.y * scaleVal + (window.innerHeight / 2)
-      });
-    } else {
-      // Center on map center
-      const initialScale = Math.min(window.innerWidth / 1000, window.innerHeight / 600) * 0.9;
-      setZoom(Math.max(0.7, Math.min(1.1, initialScale)));
-      setPan({
-        x: -(500 * Math.max(0.7, Math.min(1.1, initialScale))) + (window.innerWidth / 2),
-        y: -(300 * Math.max(0.7, Math.min(1.1, initialScale))) + (window.innerHeight / 2)
-      });
-    }
-  }, [hoveredDest, transitioningTo]);
-
-  // Window resize camera alignment
-  useEffect(() => {
-    const handleResize = () => {
-      if (!hoveredDest && !transitioningTo) {
-        const initialScale = Math.min(window.innerWidth / 1000, window.innerHeight / 600) * 0.9;
-        setZoom(Math.max(0.7, Math.min(1.1, initialScale)));
+    const updateCamera = () => {
+      if (transitioningTo) {
+        const scaleVal = 1.8;
+        setZoom(scaleVal);
         setPan({
-          x: -(500 * Math.max(0.7, Math.min(1.1, initialScale))) + (window.innerWidth / 2),
-          y: -(300 * Math.max(0.7, Math.min(1.1, initialScale))) + (window.innerHeight / 2)
+          x: -transitioningTo.x * scaleVal + window.innerWidth / 2,
+          y: -transitioningTo.y * scaleVal + window.innerHeight / 2
+        });
+      } else if (hoveredDest) {
+        const scaleVal = 1.15;
+        setZoom(scaleVal);
+        setPan({
+          x: -hoveredDest.x * scaleVal + window.innerWidth / 2,
+          y: -hoveredDest.y * scaleVal + window.innerHeight / 2
+        });
+      } else {
+        const initialScale = Math.min(window.innerWidth / 1000, window.innerHeight / 600) * 0.9;
+        const scaleVal = Math.max(0.7, Math.min(1.1, initialScale));
+        setZoom(scaleVal);
+        setPan({
+          x: -(500 * scaleVal) + window.innerWidth / 2,
+          y: -(300 * scaleVal) + window.innerHeight / 2
         });
       }
     };
-    window.addEventListener("resize", handleResize);
-    handleResize();
-    return () => window.removeEventListener("resize", handleResize);
+
+    window.addEventListener("resize", updateCamera);
+    updateCamera();
+
+    return () => window.removeEventListener("resize", updateCamera);
   }, [hoveredDest, transitioningTo]);
 
   // Keyboard navigation mappings
@@ -404,7 +393,7 @@ export const MainHubScene: React.FC = () => {
               <g 
                 key={dest.id}
                 transform={`translate(${dest.x}, ${dest.y})`}
-                className={`pointer-events-auto cursor-pointer group transition-all duration-300 ${isLegendsLocked ? "opacity-35" : ""}`}
+                className={`pointer-events-auto cursor-pointer group transition-opacity duration-300 ${isLegendsLocked ? "opacity-35" : ""}`}
                 onMouseEnter={() => handleNodeHover(dest, index)}
                 onMouseLeave={() => handleNodeHover(null, -1)}
                 onClick={() => handleNodeClick(dest)}
@@ -534,11 +523,7 @@ export const MainHubScene: React.FC = () => {
       {/* FLOATING HOVER CARD PANEL */}
       {hoveredDest && (
         <div 
-          className="absolute z-30 pointer-events-none bg-[#151515] border border-[#242424] p-4 rounded max-w-[240px] shadow-2xl animate-[fadeIn_0.15s_ease-out] select-none"
-          style={{
-            left: `${Math.min(window.innerWidth - 260, Math.max(20, window.innerWidth / 2 - 120))}px`,
-            bottom: "100px"
-          }}
+          className="absolute z-30 pointer-events-none bg-[#151515] border border-[#242424] p-4 rounded w-[240px] shadow-2xl animate-[fadeIn_0.15s_ease-out] select-none left-1/2 -translate-x-1/2 bottom-[100px]"
         >
           <div className="border-b border-[#242424] pb-2 mb-2">
             <div className="flex justify-between items-center">
