@@ -53,6 +53,17 @@ export const MainHubScene: React.FC = () => {
   const [zoom, setZoom] = useState(1);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [isZooming, setIsZooming] = useState(false);
+  const zoomTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup zoom timeout
+  useEffect(() => {
+    return () => {
+      if (zoomTimeoutRef.current) {
+        clearTimeout(zoomTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const mapWrapperRef = useRef<HTMLDivElement>(null);
 
@@ -128,13 +139,6 @@ export const MainHubScene: React.FC = () => {
           x: -transitioningTo.x * scaleVal + window.innerWidth / 2,
           y: -transitioningTo.y * scaleVal + window.innerHeight / 2
         });
-      } else if (hoveredDest) {
-        const scaleVal = 1.15;
-        setZoom(scaleVal);
-        setPan({
-          x: -hoveredDest.x * scaleVal + window.innerWidth / 2,
-          y: -hoveredDest.y * scaleVal + window.innerHeight / 2
-        });
       } else {
         const initialScale = Math.min(window.innerWidth / 1000, window.innerHeight / 600) * 0.9;
         const scaleVal = Math.max(0.7, Math.min(1.1, initialScale));
@@ -150,7 +154,7 @@ export const MainHubScene: React.FC = () => {
     updateCamera();
 
     return () => window.removeEventListener("resize", updateCamera);
-  }, [hoveredDest, transitioningTo]);
+  }, [transitioningTo]);
 
   // Keyboard navigation mappings
   useEffect(() => {
@@ -223,10 +227,21 @@ export const MainHubScene: React.FC = () => {
   const handleWheel = (e: WheelEvent) => {
     if (transitioningTo) return;
     e.preventDefault();
+
+    setIsZooming(true);
+    if (zoomTimeoutRef.current) {
+      clearTimeout(zoomTimeoutRef.current);
+    }
+    zoomTimeoutRef.current = setTimeout(() => {
+      setIsZooming(false);
+    }, 150);
+
     const zoomIntensity = 0.08;
     const zoomFactor = e.deltaY < 0 ? (1 + zoomIntensity) : (1 - zoomIntensity);
-    const newZoom = zoom * zoomFactor;
-    setZoom(Math.max(0.5, Math.min(2.5, newZoom)));
+    setZoom((prevZoom) => {
+      const newZoom = prevZoom * zoomFactor;
+      return Math.max(0.5, Math.min(2.5, newZoom));
+    });
   };
 
   useEffect(() => {
@@ -239,7 +254,7 @@ export const MainHubScene: React.FC = () => {
         wrapper.removeEventListener("wheel", handleWheel);
       }
     };
-  }, [zoom, transitioningTo]);
+  }, [transitioningTo]);
 
   // Node interaction triggers
   const handleNodeHover = (dest: Destination | null, index: number) => {
@@ -331,7 +346,7 @@ export const MainHubScene: React.FC = () => {
       <div 
         style={{
           transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
-          transition: isDragging ? "none" : "transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)",
+          transition: (isDragging || isZooming) ? "none" : "transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)",
           transformOrigin: "center center",
           willChange: "transform"
         }}
