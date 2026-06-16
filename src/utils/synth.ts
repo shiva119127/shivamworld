@@ -1,48 +1,208 @@
-// Web Audio API Synthesizer for Shivam's World Portfolio
-// Provides premium, zero-asset-loading, instant sound design.
+// Howler.js Audio Engine for Shivam's World Portfolio
+// Dynamic zero-network PCM WAV asset generator
 
-let audioCtx: AudioContext | null = null;
-let globalGain: GainNode | null = null;
+import { Howl, Howler } from "howler";
+
+let isInitialized = false;
 let currentVolume = 0.5;
 let isMuted = false;
 
-// Running sound references for loops
-let loadingAmbienceNode: { oscillator1: OscillatorNode; oscillator2: OscillatorNode; gain: GainNode } | null = null;
-let hubThemeNode: { oscillators: OscillatorNode[]; gain: GainNode } | null = null;
-let portalAmbienceNode: { noiseSource: AudioBufferSourceNode; filter: BiquadFilterNode; gain: GainNode } | null = null;
+interface HowlSounds {
+  loadingAmbience: Howl;
+  completion: Howl;
+  unlock: Howl;
+  hubTheme: Howl;
+  hover: Howl;
+  click: Howl;
+  mission: Howl;
+  checkpoint: Howl;
+  achievement: Howl;
+  portalAmbience: Howl;
+}
+
+let sounds: HowlSounds | null = null;
+
+// Standard PCM 16-bit Mono WAV generator
+function generateWavUrl(duration: number, sampleRate: number, synthFn: (t: number) => number): string {
+  const numSamples = Math.floor(sampleRate * duration);
+  const buffer = new ArrayBuffer(44 + numSamples * 2);
+  const view = new DataView(buffer);
+
+  // RIFF header
+  view.setUint32(0, 0x52494646, false); // "RIFF" (Big Endian)
+  view.setUint32(4, 36 + numSamples * 2, true); // Chunk Size
+  view.setUint32(8, 0x57415645, false); // "WAVE" (Big Endian)
+
+  // Subchunk 1: fmt
+  view.setUint32(12, 0x666d7420, false); // "fmt "
+  view.setUint32(16, 16, true); // Subchunk 1 Size
+  view.setUint16(20, 1, true); // Audio Format (1 = PCM)
+  view.setUint16(22, 1, true); // Num Channels (1 = Mono)
+  view.setUint32(24, sampleRate, true); // Sample Rate
+  view.setUint32(28, sampleRate * 2, true); // Byte Rate
+  view.setUint16(32, 2, true); // Block Align
+  view.setUint16(34, 16, true); // Bits Per Sample
+
+  // Subchunk 2: data
+  view.setUint32(36, 0x64617461, false); // "data"
+  view.setUint32(40, numSamples * 2, true); // Data Size
+
+  // Write sample data
+  let offset = 44;
+  for (let i = 0; i < numSamples; i++) {
+    const t = i / sampleRate;
+    const sample = Math.max(-1, Math.min(1, synthFn(t)));
+    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+    offset += 2;
+  }
+
+  const blob = new Blob([buffer], { type: "audio/wav" });
+  return URL.createObjectURL(blob);
+}
 
 // Initialize the Audio Context safely
 export const initAudioContext = (): AudioContext | null => {
   if (typeof window === "undefined") return null;
   
-  if (!audioCtx) {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return null;
-    
-    audioCtx = new AudioContextClass();
-    globalGain = audioCtx.createGain();
-    globalGain.gain.setValueAtTime(isMuted ? 0 : currentVolume, audioCtx.currentTime);
-    globalGain.connect(audioCtx.destination);
+  if (!isInitialized) {
+    const sampleRate = 22050; // Balanced sample rate for instant compilation and low footprint
+
+    // 1. Loading screen ambience (looping low frequency drone)
+    const loadingAmbienceUrl = generateWavUrl(4.0, sampleRate, (t) => {
+      const base = Math.sin(2 * Math.PI * 55 * t) * 0.6;
+      const sub = Math.sin(2 * Math.PI * 27.5 * t) * 0.4;
+      return (base + sub) * 0.15;
+    });
+
+    // 2. Loading completion chime (ascending crystal chime)
+    const completionUrl = generateWavUrl(1.5, sampleRate, (t) => {
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      const idx = Math.min(3, Math.floor(t / 0.15));
+      const age = t - idx * 0.15;
+      if (age < 0) return 0;
+      let val = 0;
+      for (let i = 0; i <= idx; i++) {
+        val += Math.sin(2 * Math.PI * notes[i] * (t - i * 0.15)) * Math.exp(-6 * (t - i * 0.15));
+      }
+      return val * 0.2;
+    });
+
+    // 3. Profile Unlock (mechanical ticks and power sweep)
+    const unlockUrl = generateWavUrl(1.0, sampleRate, (t) => {
+      const click = Math.sin(2 * Math.PI * (1200 - 800 * t) * t) * Math.exp(-60 * t);
+      const whoosh = Math.sin(2 * Math.PI * (100 + 400 * t) * t) * Math.exp(-4 * t) * 0.3;
+      return click + whoosh;
+    });
+
+    // 4. Main Hub loop theme (16s looping atmospheric pad)
+    const hubThemeUrl = generateWavUrl(16.0, sampleRate, (t) => {
+      const chords = [
+        [164.81, 220.00, 261.63, 329.63], // Am
+        [174.61, 220.00, 261.63, 349.23], // F
+        [196.00, 261.63, 329.63, 392.00], // C
+        [196.00, 246.94, 293.66, 392.00]  // G
+      ];
+      const chordIdx = Math.floor(t / 4.0) % 4;
+      const freqs = chords[chordIdx];
+      let val = 0;
+      freqs.forEach((f) => {
+        val += Math.sin(2 * Math.PI * f * t);
+      });
+      const lfo = Math.sin(2 * Math.PI * 0.1 * t) * 0.02;
+      val += Math.sin(2 * Math.PI * freqs[1] * (1 + lfo) * t);
+      return val * 0.05;
+    });
+
+    // 5. Interface hover click (soft digital pulse sweep)
+    const hoverUrl = generateWavUrl(0.1, sampleRate, (t) => {
+      return Math.sin(2 * Math.PI * (1000 + 500 * t) * t) * Math.exp(-40 * t) * 0.15;
+    });
+
+    // 6. Interface click selection (tactile selection click)
+    const clickUrl = generateWavUrl(0.1, sampleRate, (t) => {
+      return Math.sin(2 * Math.PI * (400 - 300 * t) * t) * Math.exp(-35 * t) * 0.25;
+    });
+
+    // 7. Quest Citadel whoosh (cinematic low frequency whoosh)
+    const missionUrl = generateWavUrl(1.2, sampleRate, (t) => {
+      const sweep = Math.sin(2 * Math.PI * (250 - 200 * t) * t);
+      let noise = 0;
+      for (let i = 0; i < 5; i++) {
+        noise += Math.random() * 2 - 1;
+      }
+      noise /= 5;
+      const env = Math.sin(Math.PI * (t / 1.2));
+      return (sweep * 0.6 + noise * 0.4) * env * 0.25;
+    });
+
+    // 8. Ascent Trail / Checkpoint sound (ascending adventure chime)
+    const checkpointUrl = generateWavUrl(0.6, sampleRate, (t) => {
+      const notes = [440.00, 880.00];
+      const idx = Math.min(1, Math.floor(t / 0.08));
+      const noteT = t - idx * 0.08;
+      return Math.sin(2 * Math.PI * notes[idx] * noteT) * Math.exp(-12 * noteT) * 0.2;
+    });
+
+    // 9. Hall of Legends chime (retro major arpeggio fanfare)
+    const achievementUrl = generateWavUrl(1.2, sampleRate, (t) => {
+      const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99];
+      const idx = Math.min(5, Math.floor(t / 0.12));
+      let val = 0;
+      for (let i = 0; i <= idx; i++) {
+        const age = t - i * 0.12;
+        val += Math.sin(2 * Math.PI * notes[i] * age) * Math.exp(-5 * age);
+      }
+      return val * 0.12;
+    });
+
+    // 10. Portal / Contact activation sound (sweeping filter noise)
+    const portalAmbienceUrl = generateWavUrl(4.0, sampleRate, (t) => {
+      let lastOut = 0;
+      const env = Math.sin(Math.PI * (t / 4.0));
+      const sweep = 300 + 150 * Math.sin(2 * Math.PI * 0.2 * t);
+      const tone = Math.sin(2 * Math.PI * sweep * t);
+      const white = Math.random() * 2 - 1;
+      return (tone * 0.4 + white * 0.6) * env * 0.08;
+    });
+
+    sounds = {
+      loadingAmbience: new Howl({ src: [loadingAmbienceUrl], format: ["wav"], loop: true, volume: 0.25 }),
+      completion: new Howl({ src: [completionUrl], format: ["wav"], volume: 0.3 }),
+      unlock: new Howl({ src: [unlockUrl], format: ["wav"], volume: 0.3 }),
+      hubTheme: new Howl({ src: [hubThemeUrl], format: ["wav"], loop: true, volume: 0.20 }), // Default to 20% volume
+      hover: new Howl({ src: [hoverUrl], format: ["wav"], volume: 0.2 }),
+      click: new Howl({ src: [clickUrl], format: ["wav"], volume: 0.3 }),
+      mission: new Howl({ src: [missionUrl], format: ["wav"], volume: 0.35 }),
+      checkpoint: new Howl({ src: [checkpointUrl], format: ["wav"], volume: 0.3 }),
+      achievement: new Howl({ src: [achievementUrl], format: ["wav"], volume: 0.3 }),
+      portalAmbience: new Howl({ src: [portalAmbienceUrl], format: ["wav"], loop: true, volume: 0.15 })
+    };
+
+    isInitialized = true;
+
+    // Synchronize global settings
+    const savedVolume = localStorage.getItem("shivams_world_volume");
+    const savedMuted = localStorage.getItem("shivams_world_muted");
+    if (savedVolume !== null) {
+      currentVolume = parseFloat(savedVolume);
+      Howler.volume(currentVolume);
+    }
+    if (savedMuted !== null) {
+      isMuted = savedMuted === "true";
+      Howler.mute(isMuted);
+    }
   }
-  
-  if (audioCtx.state === "suspended") {
-    audioCtx.resume();
-  }
-  
-  return audioCtx;
+
+  return null;
 };
 
-// Set volume scale (0 to 1)
+// Set global volume (0 to 1)
 export const setGlobalVolume = (vol: number) => {
   currentVolume = Math.max(0, Math.min(1, vol));
   if (typeof window !== "undefined" && localStorage) {
     localStorage.setItem("shivams_world_volume", currentVolume.toString());
   }
-  
-  if (globalGain && audioCtx) {
-    const targetVal = isMuted ? 0 : currentVolume;
-    globalGain.gain.setTargetAtTime(targetVal, audioCtx.currentTime, 0.05);
-  }
+  Howler.volume(currentVolume);
 };
 
 // Toggle mute state
@@ -51,407 +211,96 @@ export const setMutedState = (mute: boolean) => {
   if (typeof window !== "undefined" && localStorage) {
     localStorage.setItem("shivams_world_muted", isMuted ? "true" : "false");
   }
-  
-  if (globalGain && audioCtx) {
-    const targetVal = isMuted ? 0 : currentVolume;
-    globalGain.gain.setTargetAtTime(targetVal, audioCtx.currentTime, 0.05);
-  }
+  Howler.mute(isMuted);
 };
 
-// 1. Loading Screen Ambience: Low frequency detuned drone
+// Play/Stop control mapping
+
 export const playLoadingAmbience = () => {
-  const ctx = initAudioContext();
-  if (!ctx || !globalGain || loadingAmbienceNode) return;
-
-  // Create two oscillators for detuned warmth
-  const osc1 = ctx.createOscillator();
-  const osc2 = ctx.createOscillator();
-  const filter = ctx.createBiquadFilter();
-  const gainNode = ctx.createGain();
-
-  osc1.type = "sawtooth";
-  osc1.frequency.value = 55; // A1
-  osc1.detune.value = -10;
-
-  osc2.type = "triangle";
-  osc2.frequency.value = 55.2; // slightly offset
-  osc2.detune.value = 10;
-
-  filter.type = "lowpass";
-  filter.frequency.value = 120; // steep lowpass for dark drone
-
-  gainNode.gain.setValueAtTime(0, ctx.currentTime);
-  // Fade in ambience
-  gainNode.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 1.5);
-
-  osc1.connect(filter);
-  osc2.connect(filter);
-  filter.connect(gainNode);
-  gainNode.connect(globalGain);
-
-  osc1.start();
-  osc2.start();
-
-  loadingAmbienceNode = { oscillator1: osc1, oscillator2: osc2, gain: gainNode };
+  initAudioContext();
+  if (sounds) sounds.loadingAmbience.play();
 };
 
 export const stopLoadingAmbience = () => {
-  const ctx = audioCtx;
-  if (!ctx || !loadingAmbienceNode) return;
-
-  const node = loadingAmbienceNode;
-  loadingAmbienceNode = null;
-
-  node.gain.gain.setValueAtTime(node.gain.gain.value, ctx.currentTime);
-  node.gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-
-  setTimeout(() => {
-    try {
-      node.oscillator1.stop();
-      node.oscillator2.stop();
-    } catch (e) {}
-  }, 600);
+  if (sounds) {
+    sounds.loadingAmbience.fade(sounds.loadingAmbience.volume(), 0, 400);
+    setTimeout(() => {
+      sounds?.loadingAmbience.stop();
+      sounds?.loadingAmbience.volume(0.25);
+    }, 450);
+  }
 };
 
-// 2. Loading Completion Chime: Bright crystalline drop
 export const playCompletionSound = () => {
-  const ctx = initAudioContext();
-  if (!ctx || !globalGain) return;
-
-  const playChime = (freq: number, delay: number, dur: number) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
-
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
-
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(2000, ctx.currentTime);
-
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.setValueAtTime(0, ctx.currentTime + delay);
-    gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + delay + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + dur);
-
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(globalGain!);
-
-    osc.start(ctx.currentTime + delay);
-    osc.stop(ctx.currentTime + delay + dur + 0.1);
-  };
-
-  playChime(523.25, 0, 0.6); // C5
-  playChime(659.25, 0.1, 0.6); // E5
-  playChime(783.99, 0.2, 0.8); // G5
-  playChime(1046.50, 0.3, 1.2); // C6
+  initAudioContext();
+  if (sounds) sounds.completion.play();
 };
 
-// 3. Profile Unlock: Cybernetic click + mechanical disengage
 export const playUnlockSound = () => {
-  const ctx = initAudioContext();
-  if (!ctx || !globalGain) return;
-
-  // Mechanical click sequence
-  const playTick = (delay: number, pitch: number, vol: number) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "square";
-    osc.frequency.setValueAtTime(pitch, ctx.currentTime + delay);
-    
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.setValueAtTime(vol, ctx.currentTime + delay);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.02);
-
-    osc.connect(gain);
-    gain.connect(globalGain!);
-    osc.start(ctx.currentTime + delay);
-    osc.stop(ctx.currentTime + delay + 0.05);
-  };
-
-  // Ticks representing locking mechanism releasing
-  playTick(0, 1200, 0.08);
-  playTick(0.06, 1000, 0.08);
-  playTick(0.12, 1400, 0.08);
-
-  // Power sweep
-  const sweepOsc = ctx.createOscillator();
-  const sweepGain = ctx.createGain();
-  const filter = ctx.createBiquadFilter();
-
-  sweepOsc.type = "sawtooth";
-  sweepOsc.frequency.setValueAtTime(110, ctx.currentTime + 0.15);
-  sweepOsc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.6);
-
-  filter.type = "lowpass";
-  filter.frequency.setValueAtTime(150, ctx.currentTime + 0.15);
-  filter.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.6);
-
-  sweepGain.gain.setValueAtTime(0, ctx.currentTime);
-  sweepGain.gain.setValueAtTime(0, ctx.currentTime + 0.15);
-  sweepGain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.25);
-  sweepGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.7);
-
-  sweepOsc.connect(filter);
-  filter.connect(sweepGain);
-  sweepGain.connect(globalGain);
-
-  sweepOsc.start(ctx.currentTime + 0.15);
-  sweepOsc.stop(ctx.currentTime + 0.8);
+  initAudioContext();
+  if (sounds) sounds.unlock.play();
 };
 
-// 4. Main Hub Loop Theme: Ethereal ambient pad (looping)
 export const playHubTheme = () => {
-  const ctx = initAudioContext();
-  if (!ctx || !globalGain || hubThemeNode) return;
-
-  const freqs = [110, 165, 220, 330]; // A2, E3, A3, E4
-  const oscs: OscillatorNode[] = [];
-  const gainNode = ctx.createGain();
-  const filter = ctx.createBiquadFilter();
-
-  filter.type = "lowpass";
-  filter.frequency.setValueAtTime(250, ctx.currentTime);
-
-  gainNode.gain.setValueAtTime(0, ctx.currentTime);
-  gainNode.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 3.0); // Slow fade-in
-
-  // Setup multiple soft triangle/sine oscillators
-  freqs.forEach((freq, i) => {
-    const osc = ctx.createOscillator();
-    osc.type = i % 2 === 0 ? "sine" : "triangle";
-    osc.frequency.setValueAtTime(freq, ctx.currentTime);
-    
-    // Slow vibrato LFO
-    const lfo = ctx.createOscillator();
-    const lfoGain = ctx.createGain();
-    lfo.frequency.value = 0.5 + Math.random() * 0.3; // Very slow
-    lfoGain.gain.value = 1.5; // detune depth
-    lfo.connect(lfoGain);
-    lfoGain.connect(osc.detune);
-    
-    lfo.start();
-    osc.connect(filter);
-    osc.start();
-    oscs.push(osc);
-  });
-
-  filter.connect(gainNode);
-  gainNode.connect(globalGain);
-
-  hubThemeNode = { oscillators: oscs, gain: gainNode };
+  initAudioContext();
+  if (sounds) {
+    sounds.hubTheme.volume(0.2);
+    sounds.hubTheme.play();
+  }
 };
 
-// Mute music volume slightly when exploring details
 export const setHubThemeMuted = (dimmed: boolean) => {
-  const ctx = audioCtx;
-  if (!ctx || !hubThemeNode) return;
-  const targetVal = dimmed ? 0.05 : 0.15;
-  hubThemeNode.gain.gain.setValueAtTime(hubThemeNode.gain.gain.value, ctx.currentTime);
-  hubThemeNode.gain.gain.linearRampToValueAtTime(targetVal, ctx.currentTime + 0.8);
+  if (sounds) {
+    const targetVal = dimmed ? 0.05 : 0.20;
+    sounds.hubTheme.fade(sounds.hubTheme.volume(), targetVal, 800);
+  }
 };
 
 export const stopHubTheme = () => {
-  const ctx = audioCtx;
-  if (!ctx || !hubThemeNode) return;
-
-  const node = hubThemeNode;
-  hubThemeNode = null;
-
-  node.gain.gain.setValueAtTime(node.gain.gain.value, ctx.currentTime);
-  node.gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.0);
-
-  setTimeout(() => {
-    try {
-      node.oscillators.forEach(osc => osc.stop());
-    } catch (e) {}
-  }, 1100);
-};
-
-// 5. Interface Hover Sound: Snappy microscopic high-frequency sweep
-export const playHoverSound = () => {
-  const ctx = initAudioContext();
-  if (!ctx || !globalGain) return;
-
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(800, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(1300, ctx.currentTime + 0.04);
-
-  gain.gain.setValueAtTime(0.025, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
-
-  osc.connect(gain);
-  gain.connect(globalGain);
-
-  osc.start();
-  osc.stop(ctx.currentTime + 0.05);
-};
-
-// 6. Interface Click Sound: Solid analog tactile click
-export const playClickSound = () => {
-  const ctx = initAudioContext();
-  if (!ctx || !globalGain) return;
-
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-
-  osc.type = "triangle";
-  osc.frequency.setValueAtTime(350, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.06);
-
-  gain.gain.setValueAtTime(0.08, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
-
-  osc.connect(gain);
-  gain.connect(globalGain);
-
-  osc.start();
-  osc.stop(ctx.currentTime + 0.07);
-};
-
-// 7. Quest / Mission Activation: Cinematic low swoosh
-export const playMissionSound = () => {
-  const ctx = initAudioContext();
-  if (!ctx || !globalGain) return;
-
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  const filter = ctx.createBiquadFilter();
-
-  osc.type = "sawtooth";
-  osc.frequency.setValueAtTime(180, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(45, ctx.currentTime + 0.5);
-
-  filter.type = "lowpass";
-  filter.frequency.setValueAtTime(400, ctx.currentTime);
-  filter.frequency.exponentialRampToValueAtTime(70, ctx.currentTime + 0.5);
-
-  gain.gain.setValueAtTime(0, ctx.currentTime);
-  gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.1);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-
-  osc.connect(filter);
-  filter.connect(gain);
-  gain.connect(globalGain);
-
-  osc.start();
-  osc.stop(ctx.currentTime + 0.65);
-};
-
-// 8. Checkpoint Level Selection: Electronic retro select chime
-export const playCheckpointSound = () => {
-  const ctx = initAudioContext();
-  if (!ctx || !globalGain) return;
-
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(440, ctx.currentTime); // A4
-  osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08); // A5
-
-  gain.gain.setValueAtTime(0, ctx.currentTime);
-  gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-
-  osc.connect(gain);
-  gain.connect(globalGain);
-
-  osc.start();
-  osc.stop(ctx.currentTime + 0.3);
-};
-
-// 9. Achievement Unlocked: Retro major-chord victory fanfare
-export const playAchievementUnlock = () => {
-  const ctx = initAudioContext();
-  if (!ctx || !globalGain) return;
-
-  const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99]; // C4, E4, G4, C5, E5, G5 (Major Arpeggio)
-  
-  notes.forEach((freq, idx) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const delay = idx * 0.07;
-    
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
-    
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.setValueAtTime(0, ctx.currentTime + delay);
-    gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + delay + 0.03);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.45);
-    
-    osc.connect(gain);
-    gain.connect(globalGain!);
-    
-    osc.start(ctx.currentTime + delay);
-    osc.stop(ctx.currentTime + delay + 0.5);
-  });
-};
-
-// 10. Portal / Contact Ambience: Filtered sweeping noise simulating cosmic wind
-export const playPortalAmbience = () => {
-  const ctx = initAudioContext();
-  if (!ctx || !globalGain || portalAmbienceNode) return;
-
-  // Synthesize white noise buffer
-  const bufferSize = 2 * ctx.sampleRate; // 2 seconds
-  const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-  const output = noiseBuffer.getChannelData(0);
-  for (let i = 0; i < bufferSize; i++) {
-    output[i] = Math.random() * 2 - 1;
+  if (sounds) {
+    sounds.hubTheme.fade(sounds.hubTheme.volume(), 0, 1000);
+    setTimeout(() => {
+      sounds?.hubTheme.stop();
+    }, 1100);
   }
+};
 
-  const noiseSource = ctx.createBufferSource();
-  noiseSource.buffer = noiseBuffer;
-  noiseSource.loop = true;
+export const playHoverSound = () => {
+  initAudioContext();
+  if (sounds) sounds.hover.play();
+};
 
-  const filter = ctx.createBiquadFilter();
-  filter.type = "bandpass";
-  filter.Q.value = 2.0;
-  filter.frequency.setValueAtTime(300, ctx.currentTime);
+export const playClickSound = () => {
+  initAudioContext();
+  if (sounds) sounds.click.play();
+};
 
-  const gainNode = ctx.createGain();
-  gainNode.gain.setValueAtTime(0, ctx.currentTime);
-  gainNode.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 1.5); // Smooth wind fade-in
+export const playMissionSound = () => {
+  initAudioContext();
+  if (sounds) sounds.mission.play();
+};
 
-  // LFO to slowly sweep wind frequency
-  const lfo = ctx.createOscillator();
-  const lfoGain = ctx.createGain();
-  lfo.type = "sine";
-  lfo.frequency.value = 0.15; // very slow cycle (6 seconds)
-  lfoGain.gain.value = 150; // modulate filter range
+export const playCheckpointSound = () => {
+  initAudioContext();
+  if (sounds) sounds.checkpoint.play();
+};
 
-  lfo.connect(lfoGain);
-  lfoGain.connect(filter.frequency);
+export const playAchievementUnlock = () => {
+  initAudioContext();
+  if (sounds) sounds.achievement.play();
+};
 
-  noiseSource.connect(filter);
-  filter.connect(gainNode);
-  gainNode.connect(globalGain);
-
-  lfo.start();
-  noiseSource.start();
-
-  portalAmbienceNode = { noiseSource, filter, gain: gainNode };
+export const playPortalAmbience = () => {
+  initAudioContext();
+  if (sounds) sounds.portalAmbience.play();
 };
 
 export const stopPortalAmbience = () => {
-  const ctx = audioCtx;
-  if (!ctx || !portalAmbienceNode) return;
-
-  const node = portalAmbienceNode;
-  portalAmbienceNode = null;
-
-  node.gain.gain.setValueAtTime(node.gain.gain.value, ctx.currentTime);
-  node.gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.0);
-
-  setTimeout(() => {
-    try {
-      node.noiseSource.stop();
-    } catch (e) {}
-  }, 1100);
+  if (sounds) {
+    sounds.portalAmbience.fade(sounds.portalAmbience.volume(), 0, 1000);
+    setTimeout(() => {
+      sounds?.portalAmbience.stop();
+      sounds?.portalAmbience.volume(0.15);
+    }, 1100);
+  }
 };
