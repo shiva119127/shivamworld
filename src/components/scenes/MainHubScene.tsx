@@ -554,7 +554,7 @@ export const MainHubScene: React.FC = () => {
             }
           </p>
 
-          {hoveredDest.detailLabel && !isLegendsLocked && (
+          {hoveredDest.detailLabel && !isAchievementsLocked && (
             <div className="mt-3 pt-2 border-t border-[#242424]/60">
               <span className="text-[8px] font-mono text-text-secondary/60 uppercase tracking-wider block">
                 {hoveredDest.detailLabel}
