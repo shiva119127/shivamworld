@@ -16,7 +16,11 @@ import {
   HelpCircle,
   Shield,
   MousePointerClick,
-  Info
+  Info,
+  TreePine,
+  Sword,
+  Brain,
+  Mountain
 } from "lucide-react";
 import { 
   playClickSound, 
@@ -59,7 +63,7 @@ export const MainHubScene: React.FC = () => {
 
   // Set initial zoom on mount
   useEffect(() => {
-    const initialScale = Math.min(window.innerWidth / 1000, window.innerHeight / 600) * 0.9;
+    const initialScale = Math.min(window.innerWidth / 1024, window.innerHeight / 657) * 0.9;
     setZoom(Math.max(0.7, Math.min(1.1, initialScale)));
   }, []);
 
@@ -80,8 +84,8 @@ export const MainHubScene: React.FC = () => {
       id: "about",
       name: "ORIGIN FOREST",
       purpose: "About",
-      x: 230,
-      y: 200,
+      x: 191,
+      y: 213,
       visualName: "forest",
       description: "Know my story and background."
     },
@@ -89,8 +93,8 @@ export const MainHubScene: React.FC = () => {
       id: "projects",
       name: "QUEST CITADEL",
       purpose: "Projects",
-      x: 500,
-      y: 110,
+      x: 511,
+      y: 193,
       visualName: "citadel",
       description: "Explore my products and missions.",
       detailLabel: "Main Mission",
@@ -100,8 +104,8 @@ export const MainHubScene: React.FC = () => {
       id: "skills",
       name: "INNOVATION LAB",
       purpose: "Skills",
-      x: 770,
-      y: 200,
+      x: 787,
+      y: 207,
       visualName: "lab",
       description: "Explore my technical abilities."
     },
@@ -109,8 +113,8 @@ export const MainHubScene: React.FC = () => {
       id: "journey",
       name: "ASCENT TRAIL",
       purpose: "Journey",
-      x: 280,
-      y: 430,
+      x: 156,
+      y: 418,
       visualName: "trail",
       description: "Walk through my growth journey."
     },
@@ -118,8 +122,8 @@ export const MainHubScene: React.FC = () => {
       id: "achievements",
       name: "HALL OF LEGENDS",
       purpose: "Achievements",
-      x: 500,
-      y: 490,
+      x: 514,
+      y: 487,
       visualName: "legends",
       description: "View my unlocked achievements."
     },
@@ -127,8 +131,8 @@ export const MainHubScene: React.FC = () => {
       id: "contact",
       name: "CONNECTION PORTAL",
       purpose: "Contact",
-      x: 720,
-      y: 430,
+      x: 750,
+      y: 448,
       visualName: "portal",
       description: "Let's build something amazing together."
     }
@@ -147,8 +151,8 @@ export const MainHubScene: React.FC = () => {
       } else {
         // Keep the map fixed at the center of the window
         setPan({
-          x: window.innerWidth / 2 - 500,
-          y: window.innerHeight / 2 - 300
+          x: window.innerWidth / 2 - 512,
+          y: window.innerHeight / 2 - 328.5
         });
       }
     };
@@ -273,16 +277,21 @@ export const MainHubScene: React.FC = () => {
   };
 
   const getDestinationIcon = (visualName: string, active: boolean) => {
-    const strokeColor = active ? "#ffffff" : "#a3a3a3";
     const size = 13;
 
     switch (visualName) {
-      case "forest": return <User className="text-[#10b981]" size={size} />;
-      case "citadel": return <Shield className="text-[#ef4444]" size={size} />;
-      case "lab": return <Zap className="text-[#3b82f6]" size={size} />;
-      case "trail": return <Compass className="text-[#f97316]" size={size} />;
+      case "forest": return <TreePine className="text-[#10b981]" size={size} />;
+      case "citadel": return <Sword className="text-[#ef4444]" size={size} />;
+      case "lab": return <Brain className="text-[#3b82f6]" size={size} />;
+      case "trail": return <Mountain className="text-[#f97316]" size={size} />;
       case "legends": return <Trophy className="text-[#eab308]" size={size} />;
-      case "portal": return <Mail className="text-[#8b5cf6]" size={size} />;
+      case "portal": return (
+        <svg className="w-3.5 h-3.5 text-[#8b5cf6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="9" strokeDasharray="4 2" />
+          <circle cx="12" cy="12" r="5" />
+          <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+        </svg>
+      );
       default: return <HelpCircle size={size} />;
     }
   };
@@ -290,13 +299,13 @@ export const MainHubScene: React.FC = () => {
   const mapWrapperRef = useRef<HTMLDivElement>(null);
 
   // Colors dictionary matching mockup theme guidelines
-  const themeColors: Record<string, { border: string, bg: string, text: string, glow: string, color: string }> = {
-    forest: { border: "border-[#10b981]/50", bg: "bg-[#10b981]/5", text: "text-[#10b981]", glow: "shadow-[0_0_15px_rgba(16,185,129,0.15)]", color: "#10b981" },
-    citadel: { border: "border-[#ef4444]/50", bg: "bg-[#ef4444]/5", text: "text-[#ef4444]", glow: "shadow-[0_0_15px_rgba(239,68,68,0.15)]", color: "#ef4444" },
-    lab: { border: "border-[#3b82f6]/50", bg: "bg-[#3b82f6]/5", text: "text-[#3b82f6]", glow: "shadow-[0_0_15px_rgba(59,130,246,0.15)]", color: "#3b82f6" },
-    trail: { border: "border-[#f97316]/50", bg: "bg-[#f97316]/5", text: "text-[#f97316]", glow: "shadow-[0_0_15px_rgba(249,115,22,0.15)]", color: "#f97316" },
-    legends: { border: "border-[#eab308]/50", bg: "bg-[#eab308]/5", text: "text-[#eab308]", glow: "shadow-[0_0_15px_rgba(234,179,8,0.15)]", color: "#eab308" },
-    portal: { border: "border-[#8b5cf6]/50", bg: "bg-[#8b5cf6]/5", text: "text-[#8b5cf6]", glow: "shadow-[0_0_15px_rgba(139,92,246,0.15)]", color: "#8b5cf6" },
+  const themeColors: Record<string, { border: string, bg: string, text: string, glow: string, color: string, borderHover: string }> = {
+    forest: { border: "border-[#10b981]/50", bg: "bg-[#10b981]/5", text: "text-[#10b981]", glow: "shadow-[0_0_15px_rgba(16,185,129,0.2)]", color: "#10b981", borderHover: "hover:border-[#10b981] border-[#10b981]" },
+    citadel: { border: "border-[#ef4444]/50", bg: "bg-[#ef4444]/5", text: "text-[#ef4444]", glow: "shadow-[0_0_15px_rgba(239,68,68,0.2)]", color: "#ef4444", borderHover: "hover:border-[#ef4444] border-[#ef4444]" },
+    lab: { border: "border-[#3b82f6]/50", bg: "bg-[#3b82f6]/5", text: "text-[#3b82f6]", glow: "shadow-[0_0_15px_rgba(59,130,246,0.2)]", color: "#3b82f6", borderHover: "hover:border-[#3b82f6] border-[#3b82f6]" },
+    trail: { border: "border-[#f97316]/50", bg: "bg-[#f97316]/5", text: "text-[#f97316]", glow: "shadow-[0_0_15px_rgba(249,115,22,0.2)]", color: "#f97316", borderHover: "hover:border-[#f97316] border-[#f97316]" },
+    legends: { border: "border-[#eab308]/50", bg: "bg-[#eab308]/5", text: "text-[#eab308]", glow: "shadow-[0_0_15px_rgba(234,179,8,0.2)]", color: "#eab308", borderHover: "hover:border-[#eab308] border-[#eab308]" },
+    portal: { border: "border-[#8b5cf6]/50", bg: "bg-[#8b5cf6]/5", text: "text-[#8b5cf6]", glow: "shadow-[0_0_15px_rgba(139,92,246,0.2)]", color: "#8b5cf6", borderHover: "hover:border-[#8b5cf6] border-[#8b5cf6]" },
   };
 
   return (
@@ -319,22 +328,22 @@ export const MainHubScene: React.FC = () => {
           transformOrigin: "center center",
           willChange: "transform"
         }}
-        className="absolute w-[1000px] h-[600px]"
+        className="absolute w-[1024px] h-[657px]"
       >
-        <svg viewBox="0 0 1000 600" className="w-full h-full pointer-events-none">
+        <svg viewBox="0 0 1024 657" className="w-full h-full pointer-events-none">
           {/* Main High-Fidelity Mockup Map Background Landscape */}
-          <image href="/map_bg.jpg" x="0" y="0" width="1000" height="600" opacity="0.85" />
+          <image href="/map_bg.jpg" x="0" y="0" width="1024" height="657" opacity="0.85" />
 
           {/* Background Compass Rose */}
           <g opacity="0.10" pointerEvents="none">
-            <circle cx="500" cy="300" r="140" fill="none" stroke="#ffffff" strokeWidth="1" strokeDasharray="4 8" className="compass-dial-cw" />
-            <circle cx="500" cy="300" r="120" fill="none" stroke="#ffffff" strokeWidth="0.5" strokeDasharray="40 10 5 10" className="compass-dial-cw" />
-            <circle cx="500" cy="300" r="95" fill="none" stroke="#ffffff" strokeWidth="0.8" strokeDasharray="12 4" className="compass-dial-ccw" />
-            <line x1="500" y1="180" x2="500" y2="420" stroke="#ffffff" strokeWidth="0.5" />
-            <line x1="380" y1="300" x2="620" y2="300" stroke="#ffffff" strokeWidth="0.5" />
-            <polygon points="500,170 504,185 496,185" fill="#ffffff" />
-            <text x="500" y="162" fill="#ffffff" fontSize="9" fontFamily="monospace" textAnchor="middle">N</text>
-            <text x="500" y="442" fill="#ffffff" fontSize="9" fontFamily="monospace" textAnchor="middle">S</text>
+            <circle cx="511" cy="354" r="140" fill="none" stroke="#ffffff" strokeWidth="1" strokeDasharray="4 8" className="compass-dial-cw" />
+            <circle cx="511" cy="354" r="120" fill="none" stroke="#ffffff" strokeWidth="0.5" strokeDasharray="40 10 5 10" className="compass-dial-cw" />
+            <circle cx="511" cy="354" r="95" fill="none" stroke="#ffffff" strokeWidth="0.8" strokeDasharray="12 4" className="compass-dial-ccw" />
+            <line x1="511" y1="234" x2="511" y2="474" stroke="#ffffff" strokeWidth="0.5" />
+            <line x1="391" y1="354" x2="631" y2="354" stroke="#ffffff" strokeWidth="0.5" />
+            <polygon points="511,224 515,239 507,239" fill="#ffffff" />
+            <text x="511" y="216" fill="#ffffff" fontSize="9" fontFamily="monospace" textAnchor="middle">N</text>
+            <text x="511" y="496" fill="#ffffff" fontSize="9" fontFamily="monospace" textAnchor="middle">S</text>
           </g>
 
           {/* Background Drifting Clouds */}
@@ -359,8 +368,8 @@ export const MainHubScene: React.FC = () => {
             return (
               <line
                 key={`path-${dest.id}`}
-                x1="500"
-                y1="300"
+                x1="511"
+                y1="354"
                 x2={dest.x}
                 y2={dest.y}
                 stroke={isHovered && !isLegendsLocked ? theme.color : "#242424"}
@@ -390,13 +399,13 @@ export const MainHubScene: React.FC = () => {
           </g>
 
           {/* Central Platform rings */}
-          <g transform="translate(500, 300)" pointerEvents="none" opacity="0.8">
+          <g transform="translate(511, 354)" pointerEvents="none" opacity="0.8">
             <ellipse cx="0" cy="0" rx="38" ry="16" fill="none" stroke="#333" strokeWidth="1.5" />
             <ellipse cx="0" cy="0" rx="26" ry="10" fill="none" stroke="#fff" strokeWidth="0.6" strokeDasharray="3 3" />
           </g>
 
           {/* Avatar Sprite Stand and Dragon Pet */}
-          <g transform="translate(500, 300)">
+          <g transform="translate(511, 354)">
             <foreignObject x="-24" y="-52" width="48" height="60" pointerEvents="none">
               <div className="w-full h-full flex items-end justify-center">
                 <img
@@ -413,7 +422,6 @@ export const MainHubScene: React.FC = () => {
               <polygon points="5,-5 8,-12 7,-4" fill="#f43f5e" className="flutter-wing" style={{ transformOrigin: "5px -4px" }} />
               <path d="M 8 2 Q 13 4 12 0" stroke="#be123c" strokeWidth="1.5" fill="none" />
               <ellipse cx="4" cy="-2" rx="5" ry="3.5" fill="#f43f5e" />
-              <circle cx="0" cy="-6" r="2.8" fill="#f43f5e" />
               <circle cx="-1" cy="-7" r="0.5" fill="#000000" />
             </g>
           </g>
@@ -421,7 +429,7 @@ export const MainHubScene: React.FC = () => {
           {/* Animated Characters and Map Props */}
           <g pointerEvents="none">
             {/* Origin Forest Spirit (Deer) */}
-            <g transform="translate(200, 215)" className="opacity-85">
+            <g transform="translate(201, 218)" className="opacity-85">
               <ellipse cx="0" cy="8" rx="8" ry="3" fill="#10b981" opacity="0.2" className="map-pulse" />
               <rect x="-6" y="-3" width="12" height="6" rx="2" fill="#10b981" />
               <line x1="-4" y1="3" x2="-4" y2="8" stroke="#10b981" strokeWidth="1.5" />
@@ -435,7 +443,7 @@ export const MainHubScene: React.FC = () => {
             </g>
 
             {/* Quest Citadel Guardian */}
-            <g transform="translate(465, 120)" className="opacity-85">
+            <g transform="translate(476, 208)" className="opacity-85">
               <ellipse cx="0" cy="10" rx="6" ry="2" fill="#000000" opacity="0.3" />
               <path d="M -5 10 L -4 0 L 4 0 L 5 10 Z" fill="#ef4444" />
               <path d="M -4 2 L 4 2 L 3 9 L -3 9 Z" fill="#374151" />
@@ -447,14 +455,14 @@ export const MainHubScene: React.FC = () => {
             </g>
 
             {/* Quest Citadel Waving Flag */}
-            <g transform="translate(530, 85)" className="opacity-85">
+            <g transform="translate(536, 148)" className="opacity-85">
               <line x1="0" y1="-25" x2="0" y2="15" stroke="#4b5563" strokeWidth="1.5" />
               <circle cx="0" cy="-26" r="1.5" fill="#f59e0b" />
               <path d="M 0 -24 C 8 -26 12 -20 20 -24 L 20 -14 C 12 -10 8 -16 0 -14 Z" fill="#ef4444" className="waving-flag" />
             </g>
 
             {/* Innovation Lab Research Drone */}
-            <g transform="translate(800, 185)" className="float-lab opacity-85">
+            <g transform="translate(817, 192)" className="float-lab opacity-85">
               <ellipse cx="0" cy="25" rx="6" ry="1.8" fill="#3b82f6" opacity="0.15" className="map-pulse" />
               <circle cx="0" cy="0" r="7" fill="#1e293b" stroke="#3b82f6" strokeWidth="1.5" />
               <circle cx="0" cy="0" r="3.5" fill="#3b82f6" opacity="0.75" className="map-flicker" />
@@ -466,7 +474,7 @@ export const MainHubScene: React.FC = () => {
             </g>
 
             {/* Ascent Trail Campfire */}
-            <g transform="translate(315, 415)" className="opacity-85">
+            <g transform="translate(191, 403)" className="opacity-85">
               <circle cx="0" cy="4" r="14" fill="#f97316" opacity="0.15" className="map-pulse" />
               <rect x="-8" y="2" width="16" height="3.5" rx="1" fill="#78350f" transform="rotate(-15)" />
               <rect x="-8" y="2" width="16" height="3.5" rx="1" fill="#78350f" transform="rotate(15)" />
@@ -478,7 +486,7 @@ export const MainHubScene: React.FC = () => {
             </g>
 
             {/* Connection Portal Wizard */}
-            <g transform="translate(685, 440)" className="opacity-85">
+            <g transform="translate(715, 463)" className="opacity-85">
               <ellipse cx="0" cy="11" rx="5" ry="1.8" fill="#000000" opacity="0.3" />
               <path d="M -4 11 L -2 -1 Q 0 -5 2 -1 L 4 11 Z" fill="#6d28d9" />
               <path d="M -3 1 L -5 10 L -1 9 Z" fill="#4c1d95" />
@@ -555,12 +563,14 @@ export const MainHubScene: React.FC = () => {
               className={`absolute z-35 pointer-events-auto cursor-pointer p-3 rounded w-[225px] transition-all duration-300 select-none bg-[#07070a]/92 border backdrop-blur-md flex flex-col space-y-1.5 ${
                 isLegendsLocked 
                   ? "opacity-50 hover:opacity-100 border-neutral-800" 
-                  : `border-neutral-800/80 hover:border-white ${theme.glow}`
-              } ${isHovered && !isLegendsLocked ? "border-white" : ""}`}
+                  : isHovered 
+                    ? `${theme.borderHover} ${theme.glow}` 
+                    : "border-neutral-800/80"
+              }`}
               style={{
                 left: `${dest.x}px`,
-                top: `${dest.y - 12}px`,
-                transform: "translate(-50%, -100%)",
+                top: dest.id === "achievements" ? `${dest.y + 16}px` : `${dest.y - 12}px`,
+                transform: dest.id === "achievements" ? "translate(-50%, 0)" : "translate(-50%, -100%)",
               }}
             >
               {/* Header block with Icon, title and category */}
@@ -569,7 +579,9 @@ export const MainHubScene: React.FC = () => {
                   {getDestinationIcon(dest.visualName, isHovered)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-rajdhani text-xs font-bold tracking-wider text-white truncate uppercase -mb-0.5">
+                  <h3 className={`font-rajdhani text-xs font-bold tracking-wider truncate uppercase -mb-0.5 ${
+                    isLegendsLocked ? "text-neutral-500" : theme.text
+                  }`}>
                     {dest.name}
                   </h3>
                   <span className="text-[7.5px] font-mono text-neutral-500 uppercase tracking-widest block">
@@ -599,9 +611,14 @@ export const MainHubScene: React.FC = () => {
 
               {/* Locked Indicator details */}
               {isLegendsLocked && (
-                <div className="pt-1 flex items-center space-x-1.5 text-[7px] font-mono text-neutral-500 border-t border-neutral-900/60">
-                  <Lock size={7} />
-                  <span className="uppercase">Locked Area</span>
+                <div className="pt-1.5 flex flex-col space-y-0.5 border-t border-neutral-900/60 text-left">
+                  <div className="flex items-center space-x-1 text-[8px] font-mono text-[#a3a3a3]">
+                    <Lock size={8} className="text-[#a3a3a3]" />
+                    <span className="uppercase font-bold">Locked</span>
+                  </div>
+                  <span className="text-[7.5px] font-sans text-neutral-500 uppercase leading-tight">
+                    Complete Ascent Trail to unlock this area.
+                  </span>
                 </div>
               )}
             </div>
@@ -612,8 +629,8 @@ export const MainHubScene: React.FC = () => {
         <div
           className="absolute bg-[#07070a]/92 border border-neutral-800/80 p-2 rounded w-[130px] flex flex-col items-center justify-center text-center select-none backdrop-blur-sm shadow-xl"
           style={{
-            left: "500px",
-            top: "336px",
+            left: "511px",
+            top: "390px",
             transform: "translateX(-50%)"
           }}
         >
@@ -732,22 +749,26 @@ export const MainHubScene: React.FC = () => {
             <span className="text-[7px] font-mono text-neutral-500 uppercase tracking-widest">CURRENT QUEST</span>
             <div className="flex items-center space-x-2">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-              <span className="text-[9px] font-mono text-white font-bold tracking-wider uppercase">
+              <span className="text-[9px] font-mono text-[#eab308] font-bold tracking-wider uppercase">
                 Building CollabKaro
               </span>
             </div>
           </div>
 
           {/* Bottom row: Level / XP progress bar */}
-          <div className="space-y-1.5 pt-1">
-            <div className="flex justify-between items-end text-[7px] font-mono text-neutral-500 uppercase tracking-wider">
-              <span className="text-white font-bold">LVL 12</span>
-              <span>2,450 / 5,000 XP</span>
+          <div className="flex items-center space-x-3 pt-1 border-t border-neutral-800/30">
+            {/* N Circle Badge */}
+            <div className="w-6 h-6 rounded-full bg-black border border-neutral-800/80 flex items-center justify-center text-[10px] font-bold text-white font-mono flex-shrink-0">
+              N
             </div>
-            <div className="w-full h-1 bg-neutral-900 rounded overflow-hidden relative flex items-center">
-              <div className="h-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)] rounded" style={{ width: "49%" }} />
-              {/* N Circle indicator */}
-              <div className="absolute right-1 w-2.5 h-2.5 rounded-full bg-black border border-neutral-800 text-[5px] font-mono flex items-center justify-center text-white">N</div>
+            <div className="flex-1 space-y-1">
+              <div className="flex justify-between items-end text-[7px] font-mono text-neutral-500 uppercase tracking-wider">
+                <span className="text-white font-bold">LVL 12</span>
+                <span>2,450 / 5,000 XP</span>
+              </div>
+              <div className="w-full h-1 bg-neutral-950 border border-neutral-900/60 rounded-full overflow-hidden">
+                <div className="h-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" style={{ width: "49%" }} />
+              </div>
             </div>
           </div>
         </div>
@@ -756,12 +777,21 @@ export const MainHubScene: React.FC = () => {
       {/* BOTTOM CENTER OVERLAY: Sleek instruction helpers */}
       <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 pointer-events-none select-none bg-[#0a0a0f]/90 border border-neutral-800/80 px-4 py-2 rounded flex items-center space-x-4 backdrop-blur-sm shadow-xl">
         <div className="flex items-center space-x-1.5 text-[8.5px] font-mono text-neutral-400 uppercase tracking-widest">
-          <Info size={11} className="text-[#a3a3c2]" />
+          {/* Custom Mouse Hover SVG */}
+          <svg className="w-3.5 h-3.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="5" y="2" width="14" height="20" rx="7" />
+            <path d="M12 6v4" className="animate-pulse" />
+          </svg>
           <span>Hover to discover</span>
         </div>
         <div className="w-px h-3 bg-neutral-800" />
         <div className="flex items-center space-x-1.5 text-[8.5px] font-mono text-neutral-400 uppercase tracking-widest">
-          <MousePointerClick size={11} className="text-[#a3a3c2]" />
+          {/* Custom Mouse Click SVG */}
+          <svg className="w-3.5 h-3.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="5" y="2" width="14" height="20" rx="7" />
+            <path d="M12 2v10M5 12h14" />
+            <path d="M9 6h2v3H9z" fill="currentColor" />
+          </svg>
           <span>Click to explore</span>
         </div>
       </div>

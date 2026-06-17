@@ -215,11 +215,11 @@ body::before {
   100% { transform: rotate(-360deg); }
 }
 .compass-dial-cw {
-  transform-origin: 500px 300px;
+  transform-origin: 511px 354px;
   animation: compass-rotate-clockwise 90s infinite linear;
 }
 .compass-dial-ccw {
-  transform-origin: 500px 300px;
+  transform-origin: 511px 354px;
   animation: compass-rotate-counter 130s infinite linear;
 }
 
@@ -251,10 +251,10 @@ body::before {
 .energy-spark {
   animation: spark-flow 3.5s infinite linear;
 }
-.spark-forest { offset-path: path('M 500 300 L 230 200'); animation-duration: 3.2s; animation-delay: 0s; }
-.spark-citadel { offset-path: path('M 500 300 L 500 110'); animation-duration: 2.8s; animation-delay: 0.5s; }
-.spark-lab { offset-path: path('M 500 300 L 770 200'); animation-duration: 3.4s; animation-delay: 1.0s; }
-.spark-trail { offset-path: path('M 500 300 L 280 430'); animation-duration: 4.0s; animation-delay: 0.2s; }
-.spark-legends { offset-path: path('M 500 300 L 500 490'); animation-duration: 3.6s; animation-delay: 0.8s; }
-.spark-portal { offset-path: path('M 500 300 L 720 430'); animation-duration: 3.0s; animation-delay: 1.4s; }
+.spark-forest { offset-path: path('M 511 354 L 191 213'); animation-duration: 3.2s; animation-delay: 0s; }
+.spark-citadel { offset-path: path('M 511 354 L 511 193'); animation-duration: 2.8s; animation-delay: 0.5s; }
+.spark-lab { offset-path: path('M 511 354 L 787 207'); animation-duration: 3.4s; animation-delay: 1.0s; }
+.spark-trail { offset-path: path('M 511 354 L 156 418'); animation-duration: 4.0s; animation-delay: 0.2s; }
+.spark-legends { offset-path: path('M 511 354 L 514 487'); animation-duration: 3.6s; animation-delay: 0.8s; }
+.spark-portal { offset-path: path('M 511 354 L 750 448'); animation-duration: 3.0s; animation-delay: 1.4s; }
 
