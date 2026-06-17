@@ -175,3 +175,83 @@ body::before {
   stroke-dasharray: 6, 4;
   animation: dash-flow 1.5s infinite linear;
 }
+
+/* --- Dynamic Map Enhancements (New) --- */
+
+/* Floating/Bobbing animations for individual islands */
+@keyframes bob-citadel { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -6px, 0); } }
+@keyframes bob-forest { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -4px, 0); } }
+@keyframes bob-lab { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -5px, 0); } }
+@keyframes bob-trail { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -6px, 0); } }
+@keyframes bob-legends { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -4px, 0); } }
+@keyframes bob-portal { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -5px, 0); } }
+
+.float-citadel { animation: bob-citadel 6s infinite ease-in-out; }
+.float-forest { animation: bob-forest 5s infinite ease-in-out; }
+.float-lab { animation: bob-lab 7s infinite ease-in-out; }
+.float-trail { animation: bob-trail 6.5s infinite ease-in-out; }
+.float-legends { animation: bob-legends 5.5s infinite ease-in-out; }
+.float-portal { animation: bob-portal 4.8s infinite ease-in-out; }
+
+/* Background Cloud Drift */
+@keyframes cloud-drift {
+  0% { transform: translate3d(-200px, 0, 0); }
+  100% { transform: translate3d(1200px, 0, 0); }
+}
+.cloud-drift-1 { animation: cloud-drift 90s infinite linear; }
+.cloud-drift-2 { animation: cloud-drift 140s infinite linear; }
+.cloud-drift-3 { animation: cloud-drift 190s infinite linear; }
+
+/* Background Compass Rotation */
+@keyframes compass-rotate-clockwise {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes compass-rotate-counter {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+.compass-dial-cw {
+  transform-origin: 500px 300px;
+  animation: compass-rotate-clockwise 90s infinite linear;
+}
+.compass-dial-ccw {
+  transform-origin: 500px 300px;
+  animation: compass-rotate-counter 130s infinite linear;
+}
+
+/* Waving flags and wings */
+@keyframes wave-motion {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(8deg); }
+}
+@keyframes wing-flutter {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.7) translateY(-1px); }
+}
+.waving-flag {
+  transform-origin: bottom left;
+  animation: wave-motion 1.8s infinite ease-in-out;
+}
+.flutter-wing {
+  transform-origin: center bottom;
+  animation: wing-flutter 0.3s infinite ease-in-out;
+}
+
+/* Path energy sparks */
+@keyframes spark-flow {
+  0% { offset-distance: 0%; opacity: 0; }
+  15% { opacity: 0.9; }
+  85% { opacity: 0.9; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+.energy-spark {
+  animation: spark-flow 3.5s infinite linear;
+}
+.spark-forest { offset-path: path('M 500 300 L 230 200'); animation-duration: 3.2s; animation-delay: 0s; }
+.spark-citadel { offset-path: path('M 500 300 L 500 110'); animation-duration: 2.8s; animation-delay: 0.5s; }
+.spark-lab { offset-path: path('M 500 300 L 770 200'); animation-duration: 3.4s; animation-delay: 1.0s; }
+.spark-trail { offset-path: path('M 500 300 L 280 430'); animation-duration: 4.0s; animation-delay: 0.2s; }
+.spark-legends { offset-path: path('M 500 300 L 500 490'); animation-duration: 3.6s; animation-delay: 0.8s; }
+.spark-portal { offset-path: path('M 500 300 L 720 430'); animation-duration: 3.0s; animation-delay: 1.4s; }
+
