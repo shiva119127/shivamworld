@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full scroll-smooth antialiased dark" suppressHydrationWarning>
+    <html lang="en" className="h-full scroll-smooth antialiased dark">
       <body className="bg-background text-text-primary h-full w-full overflow-hidden select-none">
         <PortfolioProvider>
           <AudioController />

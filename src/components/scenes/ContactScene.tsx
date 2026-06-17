@@ -55,7 +55,7 @@ export const ContactScene: React.FC = () => {
     triggerClick();
     if (link.external && link.url) {
       window.open(link.url, "_blank");
-    } else if (link.action) {
+    } else {
       link.action();
     }
   };

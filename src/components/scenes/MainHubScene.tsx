@@ -13,14 +13,7 @@ import {
   Compass, 
   Trophy, 
   Mail, 
-  HelpCircle,
-  Shield,
-  MousePointerClick,
-  Info,
-  TreePine,
-  Sword,
-  Brain,
-  Mountain
+  HelpCircle 
 } from "lucide-react";
 import { 
   playClickSound, 
@@ -55,26 +48,11 @@ export const MainHubScene: React.FC = () => {
   // Settings Dropdown State
   const [showSettings, setShowSettings] = useState(false);
 
-  // Map panning & zooming states
+  // Map panning & zooming states (controlled programmatically via window sizing and transitions)
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [isZooming, setIsZooming] = useState(false);
-  const zoomTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Set initial zoom on mount
-  useEffect(() => {
-    const initialScale = Math.min(window.innerWidth / 1024, window.innerHeight / 657) * 0.9;
-    setZoom(Math.max(0.7, Math.min(1.1, initialScale)));
-  }, []);
-
-  // Cleanup zoom timeout
-  useEffect(() => {
-    return () => {
-      if (zoomTimeoutRef.current) {
-        clearTimeout(zoomTimeoutRef.current);
-      }
-    };
-  }, []);
+  const mapWrapperRef = useRef<HTMLDivElement>(null);
 
   // Lock rule: achievements is locked until user visits Ascent Trail (journey)
   const isAchievementsLocked = !visitedScenes.includes("journey");
@@ -84,8 +62,8 @@ export const MainHubScene: React.FC = () => {
       id: "about",
       name: "ORIGIN FOREST",
       purpose: "About",
-      x: 191,
-      y: 213,
+      x: 230,
+      y: 200,
       visualName: "forest",
       description: "Know my story and background."
     },
@@ -93,19 +71,19 @@ export const MainHubScene: React.FC = () => {
       id: "projects",
       name: "QUEST CITADEL",
       purpose: "Projects",
-      x: 511,
-      y: 193,
+      x: 500,
+      y: 110,
       visualName: "citadel",
       description: "Explore my products and missions.",
-      detailLabel: "Main Mission",
+      detailLabel: "PRIMARY MISSION",
       detailValue: "CollabKaro"
     },
     {
       id: "skills",
       name: "INNOVATION LAB",
       purpose: "Skills",
-      x: 787,
-      y: 207,
+      x: 770,
+      y: 200,
       visualName: "lab",
       description: "Explore my technical abilities."
     },
@@ -113,8 +91,8 @@ export const MainHubScene: React.FC = () => {
       id: "journey",
       name: "ASCENT TRAIL",
       purpose: "Journey",
-      x: 156,
-      y: 418,
+      x: 280,
+      y: 430,
       visualName: "trail",
       description: "Walk through my growth journey."
     },
@@ -122,17 +100,17 @@ export const MainHubScene: React.FC = () => {
       id: "achievements",
       name: "HALL OF LEGENDS",
       purpose: "Achievements",
-      x: 514,
-      y: 487,
+      x: 500,
+      y: 490,
       visualName: "legends",
-      description: "View my unlocked achievements."
+      description: "View unlocked achievements."
     },
     {
       id: "contact",
       name: "CONNECTION PORTAL",
       purpose: "Contact",
-      x: 750,
-      y: 448,
+      x: 720,
+      y: 430,
       visualName: "portal",
       description: "Let's build something amazing together."
     }
@@ -149,10 +127,12 @@ export const MainHubScene: React.FC = () => {
           y: -transitioningTo.y * scaleVal + window.innerHeight / 2
         });
       } else {
-        // Keep the map fixed at the center of the window
+        const initialScale = Math.min(window.innerWidth / 1000, window.innerHeight / 600) * 0.9;
+        const scaleVal = Math.max(0.7, Math.min(1.1, initialScale));
+        setZoom(scaleVal);
         setPan({
-          x: window.innerWidth / 2 - 512,
-          y: window.innerHeight / 2 - 328.5
+          x: -(500 * scaleVal) + window.innerWidth / 2,
+          y: -(300 * scaleVal) + window.innerHeight / 2
         });
       }
     };
@@ -190,43 +170,11 @@ export const MainHubScene: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedIndex, transitioningTo]);
 
-  // Mouse wheel zoom support
-  const handleWheel = (e: WheelEvent) => {
-    if (transitioningTo) return;
-    e.preventDefault();
 
-    setIsZooming(true);
-    if (zoomTimeoutRef.current) {
-      clearTimeout(zoomTimeoutRef.current);
-    }
-    zoomTimeoutRef.current = setTimeout(() => {
-      setIsZooming(false);
-    }, 150);
-
-    const zoomIntensity = 0.08;
-    const zoomFactor = e.deltaY < 0 ? (1 + zoomIntensity) : (1 - zoomIntensity);
-    setZoom((prevZoom) => {
-      const newZoom = prevZoom * zoomFactor;
-      return Math.max(0.5, Math.min(2.5, newZoom));
-    });
-  };
-
-  useEffect(() => {
-    const wrapper = mapWrapperRef.current;
-    if (wrapper) {
-      wrapper.addEventListener("wheel", handleWheel, { passive: false });
-    }
-    return () => {
-      if (wrapper) {
-        wrapper.removeEventListener("wheel", handleWheel);
-      }
-    };
-  }, [transitioningTo]);
 
   // Node interaction triggers
   const handleNodeHover = (dest: Destination | null, index: number) => {
     if (transitioningTo) return;
-    if (hoveredDest?.id === dest?.id) return;
     setHoveredDest(dest);
     setSelectedIndex(index);
     if (dest) {
@@ -277,41 +225,24 @@ export const MainHubScene: React.FC = () => {
   };
 
   const getDestinationIcon = (visualName: string, active: boolean) => {
-    const size = 13;
+    const strokeColor = active ? "#ffffff" : "#a3a3a3";
+    const size = 18;
 
     switch (visualName) {
-      case "forest": return <TreePine className="text-[#10b981]" size={size} />;
-      case "citadel": return <Sword className="text-[#ef4444]" size={size} />;
-      case "lab": return <Brain className="text-[#3b82f6]" size={size} />;
-      case "trail": return <Mountain className="text-[#f97316]" size={size} />;
-      case "legends": return <Trophy className="text-[#eab308]" size={size} />;
-      case "portal": return (
-        <svg className="w-3.5 h-3.5 text-[#8b5cf6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="9" strokeDasharray="4 2" />
-          <circle cx="12" cy="12" r="5" />
-          <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-        </svg>
-      );
+      case "forest": return <User className="text-[#a3a3c2] group-hover:text-white" size={size} />;
+      case "citadel": return <Scroll className="text-[#a3a3c2] group-hover:text-white" size={size} />;
+      case "lab": return <Zap className="text-[#a3a3c2] group-hover:text-white" size={size} />;
+      case "trail": return <Compass className="text-[#a3a3c2] group-hover:text-white" size={size} />;
+      case "legends": return <Trophy className="text-[#a3a3c2] group-hover:text-white" size={size} />;
+      case "portal": return <Mail className="text-[#a3a3c2] group-hover:text-white" size={size} />;
       default: return <HelpCircle size={size} />;
     }
-  };
-
-  const mapWrapperRef = useRef<HTMLDivElement>(null);
-
-  // Colors dictionary matching mockup theme guidelines
-  const themeColors: Record<string, { border: string, bg: string, text: string, glow: string, color: string, borderHover: string }> = {
-    forest: { border: "border-[#10b981]/50", bg: "bg-[#10b981]/5", text: "text-[#10b981]", glow: "shadow-[0_0_15px_rgba(16,185,129,0.2)]", color: "#10b981", borderHover: "hover:border-[#10b981] border-[#10b981]" },
-    citadel: { border: "border-[#ef4444]/50", bg: "bg-[#ef4444]/5", text: "text-[#ef4444]", glow: "shadow-[0_0_15px_rgba(239,68,68,0.2)]", color: "#ef4444", borderHover: "hover:border-[#ef4444] border-[#ef4444]" },
-    lab: { border: "border-[#3b82f6]/50", bg: "bg-[#3b82f6]/5", text: "text-[#3b82f6]", glow: "shadow-[0_0_15px_rgba(59,130,246,0.2)]", color: "#3b82f6", borderHover: "hover:border-[#3b82f6] border-[#3b82f6]" },
-    trail: { border: "border-[#f97316]/50", bg: "bg-[#f97316]/5", text: "text-[#f97316]", glow: "shadow-[0_0_15px_rgba(249,115,22,0.2)]", color: "#f97316", borderHover: "hover:border-[#f97316] border-[#f97316]" },
-    legends: { border: "border-[#eab308]/50", bg: "bg-[#eab308]/5", text: "text-[#eab308]", glow: "shadow-[0_0_15px_rgba(234,179,8,0.2)]", color: "#eab308", borderHover: "hover:border-[#eab308] border-[#eab308]" },
-    portal: { border: "border-[#8b5cf6]/50", bg: "bg-[#8b5cf6]/5", text: "text-[#8b5cf6]", glow: "shadow-[0_0_15px_rgba(139,92,246,0.2)]", color: "#8b5cf6", borderHover: "hover:border-[#8b5cf6] border-[#8b5cf6]" },
   };
 
   return (
     <div 
       ref={mapWrapperRef}
-      className="relative w-full h-screen overflow-hidden bg-[#020204] select-none text-white font-sans"
+      className="relative w-full h-screen overflow-hidden bg-[#050505] select-none text-white font-sans"
     >
       {/* Background stars / slow moving drift fog */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(40,40,40,0.15)_0%,transparent_70%)] pointer-events-none z-0" />
@@ -324,36 +255,41 @@ export const MainHubScene: React.FC = () => {
       <div 
         style={{
           transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
-          transition: isZooming ? "none" : "transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)",
+          transition: "transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)",
           transformOrigin: "center center",
           willChange: "transform"
         }}
-        className="absolute w-[1024px] h-[657px]"
+        className="absolute w-[1000px] h-[600px] pointer-events-none"
       >
-        <svg viewBox="0 0 1024 657" className="w-full h-full pointer-events-none">
-          {/* Main High-Fidelity Mockup Map Background Landscape */}
-          <image href="/map_bg.jpg" x="0" y="0" width="1024" height="657" opacity="0.85" />
-
+        <svg viewBox="0 0 1000 600" className="w-full h-full">
           {/* Background Compass Rose */}
-          <g opacity="0.10" pointerEvents="none">
-            <circle cx="511" cy="354" r="140" fill="none" stroke="#ffffff" strokeWidth="1" strokeDasharray="4 8" className="compass-dial-cw" />
-            <circle cx="511" cy="354" r="120" fill="none" stroke="#ffffff" strokeWidth="0.5" strokeDasharray="40 10 5 10" className="compass-dial-cw" />
-            <circle cx="511" cy="354" r="95" fill="none" stroke="#ffffff" strokeWidth="0.8" strokeDasharray="12 4" className="compass-dial-ccw" />
-            <line x1="511" y1="234" x2="511" y2="474" stroke="#ffffff" strokeWidth="0.5" />
-            <line x1="391" y1="354" x2="631" y2="354" stroke="#ffffff" strokeWidth="0.5" />
-            <polygon points="511,224 515,239 507,239" fill="#ffffff" />
-            <text x="511" y="216" fill="#ffffff" fontSize="9" fontFamily="monospace" textAnchor="middle">N</text>
-            <text x="511" y="496" fill="#ffffff" fontSize="9" fontFamily="monospace" textAnchor="middle">S</text>
+          <g opacity="0.12" pointer-events="none">
+            {/* Outer Dial rotating clockwise */}
+            <circle cx="500" cy="300" r="140" fill="none" stroke="#ffffff" strokeWidth="1" strokeDasharray="4 8" className="compass-dial-cw" />
+            <circle cx="500" cy="300" r="120" fill="none" stroke="#ffffff" strokeWidth="0.5" strokeDasharray="40 10 5 10" className="compass-dial-cw" />
+            {/* Inner Dial rotating counter-clockwise */}
+            <circle cx="500" cy="300" r="95" fill="none" stroke="#ffffff" strokeWidth="0.8" strokeDasharray="12 4" className="compass-dial-ccw" />
+            {/* Static Directional Cross */}
+            <line x1="500" y1="180" x2="500" y2="420" stroke="#ffffff" strokeWidth="0.5" />
+            <line x1="380" y1="300" x2="620" y2="300" stroke="#ffffff" strokeWidth="0.5" />
+            <polygon points="500,170 504,185 496,185" fill="#ffffff" />
+            <text x="500" y="162" fill="#ffffff" fontSize="9" fontFamily="monospace" textAnchor="middle">N</text>
+            <text x="500" y="442" fill="#ffffff" fontSize="9" fontFamily="monospace" textAnchor="middle">S</text>
+            <text x="632" y="303" fill="#ffffff" fontSize="9" fontFamily="monospace" textAnchor="middle">E</text>
+            <text x="368" y="303" fill="#ffffff" fontSize="9" fontFamily="monospace" textAnchor="middle">W</text>
           </g>
 
           {/* Background Drifting Clouds */}
-          <g opacity="0.05" pointerEvents="none">
+          <g opacity="0.06" pointer-events="none">
+            {/* Cloud 1 */}
             <g className="cloud-drift-1" transform="translate(0, 80)">
               <path d="M 0 20 A 12 12 0 0 1 15 8 A 15 15 0 0 1 40 8 A 12 12 0 0 1 55 20 A 8 8 0 0 1 55 28 Z" fill="#ffffff" />
             </g>
+            {/* Cloud 2 */}
             <g className="cloud-drift-2" transform="translate(0, 240)">
               <path d="M 0 25 A 16 16 0 0 1 20 10 A 20 20 0 0 1 55 10 A 16 16 0 0 1 75 25 A 10 10 0 0 1 75 35 Z" fill="#ffffff" />
             </g>
+            {/* Cloud 3 */}
             <g className="cloud-drift-3" transform="translate(0, 420)">
               <path d="M 0 18 A 10 10 0 0 1 12 7 A 12 12 0 0 1 32 7 A 10 10 0 0 1 42 18 Z" fill="#ffffff" />
             </g>
@@ -363,28 +299,27 @@ export const MainHubScene: React.FC = () => {
           {destinations.map((dest) => {
             const isHovered = hoveredDest?.id === dest.id;
             const isLegendsLocked = dest.id === "achievements" && isAchievementsLocked;
-            const theme = themeColors[dest.visualName] || themeColors.forest;
 
             return (
               <line
                 key={`path-${dest.id}`}
-                x1="511"
-                y1="354"
+                x1="500"
+                y1="300"
                 x2={dest.x}
                 y2={dest.y}
-                stroke={isHovered && !isLegendsLocked ? theme.color : "#242424"}
+                stroke={isHovered && !isLegendsLocked ? "#ffffff" : "#242424"}
                 strokeWidth={isHovered && !isLegendsLocked ? "2" : "1"}
                 className={isHovered && !isLegendsLocked ? "path-flow" : ""}
-                style={{ transition: "stroke 0.3s ease, stroke-width 0.3s ease", opacity: 0.6 }}
+                style={{ transition: "stroke 0.3s ease, stroke-width 0.3s ease" }}
               />
             );
           })}
 
           {/* Path Energy Sparks */}
-          <g pointerEvents="none">
+          <g pointer-events="none">
             {destinations.map((dest) => {
               const isLegendsLocked = dest.id === "achievements" && isAchievementsLocked;
-              if (isLegendsLocked) return null;
+              if (isLegendsLocked) return null; // Sparks don't flow to locked zones
               
               return (
                 <circle
@@ -398,292 +333,307 @@ export const MainHubScene: React.FC = () => {
             })}
           </g>
 
-          {/* Central Platform rings */}
-          <g transform="translate(511, 354)" pointerEvents="none" opacity="0.8">
-            <ellipse cx="0" cy="0" rx="38" ry="16" fill="none" stroke="#333" strokeWidth="1.5" />
-            <ellipse cx="0" cy="0" rx="26" ry="10" fill="none" stroke="#fff" strokeWidth="0.6" strokeDasharray="3 3" />
-          </g>
-
-          {/* Avatar Sprite Stand and Dragon Pet */}
-          <g transform="translate(511, 354)">
-            <foreignObject x="-24" y="-52" width="48" height="60" pointerEvents="none">
+          {/* Central Platform & Player Stand */}
+          <g transform="translate(500, 300)" className="pointer-events-auto">
+            {/* Base platform ring */}
+            <ellipse cx="0" cy="0" rx="60" ry="26" fill="#101010" stroke="#242424" strokeWidth="2.5" />
+            <ellipse cx="0" cy="0" rx="42" ry="18" fill="#151515" stroke="#242424" strokeWidth="1" />
+            
+            {/* The avatar sprite stand */}
+            <foreignObject x="-24" y="-55" width="48" height="60">
               <div className="w-full h-full flex items-end justify-center">
                 <img
                   src="/character.png"
                   alt="Player Stand Avatar"
-                  className="h-11 object-contain select-none"
+                  className="h-12 object-contain select-none"
                   style={{ imageRendering: "pixelated" }}
                 />
               </div>
             </foreignObject>
 
             {/* Pixel Dragon Pet */}
-            <g transform="translate(18, -14)" pointerEvents="none">
+            <g transform="translate(18, -14)">
+              {/* Dragon wings with fluttering animation */}
               <polygon points="5,-5 8,-12 7,-4" fill="#f43f5e" className="flutter-wing" style={{ transformOrigin: "5px -4px" }} />
+              {/* Dragon tail */}
               <path d="M 8 2 Q 13 4 12 0" stroke="#be123c" strokeWidth="1.5" fill="none" />
+              {/* Dragon body */}
               <ellipse cx="4" cy="-2" rx="5" ry="3.5" fill="#f43f5e" />
+              {/* Dragon head */}
+              <circle cx="0" cy="-6" r="2.8" fill="#f43f5e" />
+              {/* Dragon eye */}
               <circle cx="-1" cy="-7" r="0.5" fill="#000000" />
+              <circle cx="-1" cy="-7" r="0.2" fill="#ffffff" />
+              {/* Tiny horns */}
+              <path d="M 2 -8.5 L 3 -10.5 M 0.5 -8.8 L 1 -11" stroke="#be123c" strokeWidth="0.8" />
+            </g>
+            
+            {/* Title Badge overlay */}
+            <g transform="translate(0, 36)">
+              <rect x="-60" y="-12" width="120" height="24" rx="3" fill="#101010" stroke="#242424" strokeWidth="1" />
+              <text textAnchor="middle" y="0" fill="#ffffff" fontSize="8" fontFamily="monospace" letterSpacing="1.5" fontWeight="bold">THE BUILDER</text>
+              <text textAnchor="middle" y="8" fill="#a3a3a3" fontSize="6" fontFamily="sans-serif">Your journey starts here.</text>
             </g>
           </g>
 
-          {/* Animated Characters and Map Props */}
-          <g pointerEvents="none">
-            {/* Origin Forest Spirit (Deer) */}
-            <g transform="translate(201, 218)" className="opacity-85">
-              <ellipse cx="0" cy="8" rx="8" ry="3" fill="#10b981" opacity="0.2" className="map-pulse" />
-              <rect x="-6" y="-3" width="12" height="6" rx="2" fill="#10b981" />
-              <line x1="-4" y1="3" x2="-4" y2="8" stroke="#10b981" strokeWidth="1.5" />
-              <line x1="-1" y1="3" x2="-1" y2="8" stroke="#10b981" strokeWidth="1.5" />
-              <line x1="2" y1="3" x2="2" y2="8" stroke="#10b981" strokeWidth="1.5" />
-              <line x1="5" y1="3" x2="5" y2="8" stroke="#10b981" strokeWidth="1.5" />
-              <path d="M 4 -2 L 8 -8" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" />
-              <ellipse cx="9" cy="-9" rx="3.5" ry="2" fill="#10b981" />
-              <path d="M 8 -11 L 6 -15 M 8 -11 L 10 -15 M 10 -15 L 8 -17 M 6 -15 L 5 -17" stroke="#10b981" strokeWidth="1" strokeLinecap="round" />
-              <circle cx="10" cy="-10" r="0.6" fill="#ffffff" />
-            </g>
-
-            {/* Quest Citadel Guardian */}
-            <g transform="translate(476, 208)" className="opacity-85">
-              <ellipse cx="0" cy="10" rx="6" ry="2" fill="#000000" opacity="0.3" />
-              <path d="M -5 10 L -4 0 L 4 0 L 5 10 Z" fill="#ef4444" />
-              <path d="M -4 2 L 4 2 L 3 9 L -3 9 Z" fill="#374151" />
-              <circle cx="0" cy="-3" r="3.5" fill="#4b5563" />
-              <rect x="-1" y="-6" width="2" height="3" fill="#ef4444" />
-              <path d="M -7 -1 Q -7 6 -3 8 Q 1 6 1 -1 Z" fill="#9ca3af" stroke="#ef4444" strokeWidth="1" transform="translate(6, 2) scale(0.8)" />
-              <line x1="-7" y1="-10" x2="-7" y2="12" stroke="#9ca3af" strokeWidth="1.2" />
-              <polygon points="-7,-14 -9,-10 -5,-10" fill="#ef4444" />
-            </g>
-
-            {/* Quest Citadel Waving Flag */}
-            <g transform="translate(536, 148)" className="opacity-85">
-              <line x1="0" y1="-25" x2="0" y2="15" stroke="#4b5563" strokeWidth="1.5" />
-              <circle cx="0" cy="-26" r="1.5" fill="#f59e0b" />
-              <path d="M 0 -24 C 8 -26 12 -20 20 -24 L 20 -14 C 12 -10 8 -16 0 -14 Z" fill="#ef4444" className="waving-flag" />
-            </g>
-
-            {/* Innovation Lab Research Drone */}
-            <g transform="translate(817, 192)" className="float-lab opacity-85">
-              <ellipse cx="0" cy="25" rx="6" ry="1.8" fill="#3b82f6" opacity="0.15" className="map-pulse" />
-              <circle cx="0" cy="0" r="7" fill="#1e293b" stroke="#3b82f6" strokeWidth="1.5" />
-              <circle cx="0" cy="0" r="3.5" fill="#3b82f6" opacity="0.75" className="map-flicker" />
-              <circle cx="-1" cy="-1" r="1.2" fill="#ffffff" />
-              <path d="M -7 0 L -12 -3 L -12 1 Z" fill="#475569" stroke="#3b82f6" strokeWidth="0.8" />
-              <path d="M 7 0 L 12 -3 L 12 1 Z" fill="#475569" stroke="#3b82f6" strokeWidth="0.8" />
-              <line x1="0" y1="7" x2="0" y2="12" stroke="#3b82f6" strokeWidth="1" />
-              <circle cx="0" cy="13" r="0.8" fill="#3b82f6" />
-            </g>
-
-            {/* Ascent Trail Campfire */}
-            <g transform="translate(191, 403)" className="opacity-85">
-              <circle cx="0" cy="4" r="14" fill="#f97316" opacity="0.15" className="map-pulse" />
-              <rect x="-8" y="2" width="16" height="3.5" rx="1" fill="#78350f" transform="rotate(-15)" />
-              <rect x="-8" y="2" width="16" height="3.5" rx="1" fill="#78350f" transform="rotate(15)" />
-              <path d="M -6 2 C -8 -4 0 -12 0 -12 C 0 -12 8 -4 6 2 Z" fill="#f97316" className="map-flicker" />
-              <path d="M -3.5 2 C -5 -2 0 -7 0 -7 C 0 -7 5 -2 3.5 2 Z" fill="#eab308" className="map-pulse" />
-              <circle cx="-3" cy="-14" r="0.8" fill="#f97316" className="map-flicker" />
-              <circle cx="4" cy="-18" r="0.6" fill="#eab308" />
-              <circle cx="0" cy="-24" r="0.7" fill="#f97316" />
-            </g>
-
-            {/* Connection Portal Wizard */}
-            <g transform="translate(715, 463)" className="opacity-85">
-              <ellipse cx="0" cy="11" rx="5" ry="1.8" fill="#000000" opacity="0.3" />
-              <path d="M -4 11 L -2 -1 Q 0 -5 2 -1 L 4 11 Z" fill="#6d28d9" />
-              <path d="M -3 1 L -5 10 L -1 9 Z" fill="#4c1d95" />
-              <circle cx="0" cy="-5" r="2.5" fill="#fbcfe8" />
-              <polygon points="-1.5,-4 1.5,-4 0,1" fill="#ffffff" />
-              <path d="M -3.5 -6.5 L 3.5 -6.5 L 0 -14 Z" fill="#4c1d95" />
-              <path d="M -4.5 -6.5 L 4.5 -6.5" stroke="#6d28d9" strokeWidth="1.2" strokeLinecap="round" />
-              <line x1="5" y1="-8" x2="5" y2="12" stroke="#78350f" strokeWidth="1" />
-              <circle cx="5" cy="-9.5" r="2.2" fill="#8b5cf6" className="map-pulse" />
-              <circle cx="5" cy="-9.5" r="1" fill="#ffffff" />
-            </g>
-          </g>
-
-          {/* Render glowing interactive diamond markers */}
+          {/* Render Isometric Destinations */}
           {destinations.map((dest, index) => {
             const isHovered = hoveredDest?.id === dest.id;
             const isLegendsLocked = dest.id === "achievements" && isAchievementsLocked;
-            const theme = themeColors[dest.visualName] || themeColors.forest;
 
             return (
               <g 
-                key={`marker-${dest.id}`}
+                key={dest.id}
                 transform={`translate(${dest.x}, ${dest.y})`}
-                className="pointer-events-auto cursor-pointer"
-                style={{ pointerEvents: "auto" }}
+                className={`pointer-events-auto cursor-pointer group transition-opacity duration-300 ${isLegendsLocked ? "opacity-35" : ""}`}
                 onMouseEnter={() => handleNodeHover(dest, index)}
                 onMouseLeave={() => handleNodeHover(null, -1)}
                 onClick={() => handleNodeClick(dest)}
               >
-                {/* Large invisible hit area for easy hover/click */}
-                <circle cx="0" cy="0" r="45" fill="transparent" className="cursor-pointer" />
-
-                {/* Glowing Aura ring on hover */}
-                {isHovered && !isLegendsLocked && (
-                  <ellipse cx="0" cy="0" rx="20" ry="10" fill="none" stroke={theme.color} strokeWidth="0.8" className="map-pulse" />
-                )}
-
-                {/* Rotating/Diamond marker node */}
-                <g transform="rotate(45)">
-                  <rect 
-                    x="-5" 
-                    y="-5" 
-                    width="10" 
-                    height="10" 
-                    rx="1" 
-                    fill="#050508" 
-                    stroke={isLegendsLocked ? "#444" : theme.color} 
-                    strokeWidth="1.5" 
-                  />
-                  {!isLegendsLocked && (
-                    <rect x="-2" y="-2" width="4" height="4" fill={theme.color} />
+                {/* Visual drawings block (pointer events disabled to prevent child hover flicker) */}
+                <g className="pointer-events-none">
+                  {/* Highlight Halo for hovered elements */}
+                  {isHovered && !isLegendsLocked && (
+                    <ellipse cx="0" cy="10" rx="50" ry="24" fill="none" stroke="#ffffff" strokeWidth="0.5" className="map-pulse" />
                   )}
-                  {isLegendsLocked && (
-                    <circle cx="0" cy="0" r="1.2" fill="#888" />
-                  )}
+
+                  {/* Floating Bobbing Island Group */}
+                  <g className={`float-${dest.visualName}`}>
+                    {/* Draw Visual Architecture */}
+                    {dest.visualName === "citadel" && (
+                      <g>
+                        <path d="M-40,10 L0,-10 L40,10 L0,30 Z" fill="#141414" stroke="#242424" />
+                        <path d="M-40,10 L-40,20 L0,40 L0,30 Z" fill="#0c0c0c" />
+                        <path d="M40,10 L40,20 L0,40 L0,30 Z" fill="#080808" />
+                        <rect x="-24" y="-35" width="11" height="40" fill="#121212" stroke="#242424" />
+                        <polygon points="-25,-35 -18.5,-47 -12,-35" fill="#1a1a1a" stroke="#242424" />
+                        <rect x="13" y="-35" width="11" height="40" fill="#121212" stroke="#242424" />
+                        <polygon points="12,-35 18.5,-47 25,-35" fill="#1a1a1a" stroke="#242424" />
+                        <rect x="-9" y="-50" width="18" height="55" fill="#161616" stroke="#242424" />
+                        <polygon points="-11,-50 0,-64 11,-50" fill="#1c1c1c" stroke="#242424" />
+                        <rect x="-3" y="-35" width="6" height="8" fill="#ffaa44" className="map-flicker" />
+                        <rect x="-19" y="-20" width="3" height="5" fill="#ff9933" className="map-flicker" />
+                        <rect x="20" y="-20" width="3" height="5" fill="#ff9933" className="map-flicker" />
+
+                        {/* Waving Flag */}
+                        <g transform="translate(0, -64)">
+                          <line x1="0" y1="0" x2="0" y2="-12" stroke="#9ca3af" strokeWidth="0.8" />
+                          <polygon points="0,-12 9,-9 0,-6" fill="#be123c" className="waving-flag" />
+                        </g>
+
+                        {/* Castle Guardian */}
+                        <g transform="translate(24, 6)">
+                          <rect x="-3" y="-10" width="6" height="10" rx="1" fill="#374151" stroke="#9ca3af" strokeWidth="0.5" />
+                          <circle cx="0" cy="-13" r="2.2" fill="#9ca3af" />
+                          <line x1="-3.5" y1="-20" x2="-3.5" y2="4" stroke="#d1d5db" strokeWidth="0.6" />
+                          <polygon points="-3.5,-20 -5,-17 -2,-17" fill="#d1d5db" />
+                          <rect x="1.5" y="-7" width="2.2" height="5" fill="#ef4444" />
+                        </g>
+                      </g>
+                    )}
+
+                    {dest.visualName === "forest" && (
+                      <g>
+                        <path d="M-40,10 L0,-10 L40,10 L0,30 Z" fill="#101310" stroke="#202620" />
+                        <polygon points="-24,2 -15,-22 -6,2" fill="#121a12" stroke="#202820" />
+                        <polygon points="-22,-8 -15,-30 -8,-8" fill="#152215" stroke="#202820" />
+                        <polygon points="6,12 15,-12 24,12" fill="#121a12" stroke="#202820" />
+                        <polygon points="8,2 15,-20 22,2" fill="#152215" stroke="#202820" />
+                        <rect x="-10" y="-26" width="5" height="22" fill="#1c1c1c" stroke="#242424" />
+                        <circle cx="0" cy="10" r="3.5" fill="#ff6611" className="map-flicker" />
+                        <path d="M-2,10 L0,5 L2,10 Z" fill="#ffaa33" className="map-flicker" />
+
+                        {/* Forest Spirit (Deer) */}
+                        <g transform="translate(18, 2)">
+                          <ellipse cx="0" cy="0" rx="5" ry="3.2" fill="#a7f3d0" />
+                          <circle cx="-5" cy="-5" r="2.2" fill="#a7f3d0" />
+                          <line x1="-2" y1="2" x2="-2" y2="6" stroke="#6ee7b7" strokeWidth="0.8" />
+                          <line x1="2" y1="2" x2="2" y2="6" stroke="#6ee7b7" strokeWidth="0.8" />
+                          <line x1="-4" y1="2" x2="-4" y2="6" stroke="#6ee7b7" strokeWidth="0.8" />
+                          <path d="M -5.5 -6 Q -8 -9 -7 -12" fill="none" stroke="#34d399" strokeWidth="0.6" />
+                          <path d="M -4.5 -6 Q -2 -9 -3 -12" fill="none" stroke="#34d399" strokeWidth="0.6" />
+                        </g>
+                      </g>
+                    )}
+
+                    {dest.visualName === "lab" && (
+                      <g>
+                        <path d="M-40,10 L0,-10 L40,10 L0,30 Z" fill="#101216" stroke="#20242e" />
+                        <path d="M-20,5 A20,20 0 0,1 20,5 Z" fill="#151b24" fillOpacity="0.3" stroke="#2563eb" strokeWidth="1.2" />
+                        <ellipse cx="0" cy="0" rx="28" ry="11" stroke="#3b82f6" strokeWidth="0.6" fill="none" className="map-pulse" />
+                        <ellipse cx="0" cy="0" rx="18" ry="7" stroke="#60a5fa" strokeWidth="0.4" fill="none" className="map-pulse" />
+                        <rect x="-2" y="-20" width="4" height="14" fill="#1e293b" stroke="#2563eb" />
+                        <circle cx="0" cy="-20" r="2.5" fill="#60a5fa" className="map-pulse" />
+
+                        {/* Hovering Research Drone */}
+                        <g transform="translate(-24, -18)" className="map-float">
+                          <circle cx="0" cy="0" r="3.2" fill="#3b82f6" stroke="#60a5fa" strokeWidth="0.5" />
+                          <circle cx="-1" cy="0" r="0.6" fill="#60a5fa" />
+                          <circle cx="1" cy="0" r="0.6" fill="#60a5fa" />
+                          <line x1="-5" y1="-2" x2="5" y2="-2" stroke="#60a5fa" strokeWidth="0.5" />
+                          <ellipse cx="0" cy="-2" rx="5" ry="1" fill="none" stroke="#93c5fd" strokeWidth="0.3" />
+                        </g>
+                      </g>
+                    )}
+
+                    {dest.visualName === "trail" && (
+                      <g>
+                        <path d="M-40,20 L-25,-10 L5,-15 L40,15 L10,35 Z" fill="#141414" stroke="#242424" />
+                        <path d="M-25,-10 L-15,-32 L10,-28 L5,-15 Z" fill="#1a1a1a" stroke="#242424" />
+                        <line x1="-8" y1="5" x2="8" y2="5" stroke="#2a2a2a" strokeWidth="1.8" />
+                        <line x1="-6" y1="-2" x2="6" y2="-2" stroke="#2a2a2a" strokeWidth="1.8" />
+                        <line x1="-4" y1="-9" x2="4" y2="-9" stroke="#2a2a2a" strokeWidth="1.8" />
+                        <line x1="-18" y1="-12" x2="-18" y2="-4" stroke="#101010" strokeWidth="1.5" />
+                        <circle cx="-18" cy="-14" r="2.5" fill="#ff7722" className="map-flicker" />
+                        <line x1="18" y1="5" x2="18" y2="13" stroke="#101010" strokeWidth="1.5" />
+                        <circle cx="18" cy="3" r="2.5" fill="#ff7722" className="map-flicker" />
+
+                        {/* Campfire */}
+                        <line x1="-4" y1="12" x2="4" y2="8" stroke="#78350f" strokeWidth="1.2" />
+                        <line x1="-4" y1="8" x2="4" y2="12" stroke="#78350f" strokeWidth="1.2" />
+                        <polygon points="-2.5,9 0,2 2.5,9" fill="#ea580c" className="map-flicker" />
+                        <polygon points="-1.2,9 0,4 1.2,9" fill="#eab308" className="map-flicker" />
+                        <circle cx="-1.5" cy="1" r="0.6" fill="#f97316" className="map-flicker" />
+                        <circle cx="2" cy="-1" r="0.5" fill="#facc15" className="map-flicker" />
+                      </g>
+                    )}
+
+                    {dest.visualName === "legends" && (
+                      <g>
+                        <path d="M-40,10 L0,-10 L40,10 L0,30 Z" fill="#1b1713" stroke="#28221b" />
+                        <rect x="-20" y="-30" width="5" height="32" fill="#141414" stroke="#242424" />
+                        <rect x="15" y="-30" width="5" height="32" fill="#141414" stroke="#242424" />
+                        <rect x="-7" y="-38" width="14" height="5" fill="#202020" stroke="#2c2c2c" />
+                        <path d="M-5,10 L-3,0 L3,0 L5,10 Z" fill="#1a1a1a" stroke="#242424" />
+                        <circle cx="0" cy="-6" r="3.5" fill="#ffb700" className="map-pulse" />
+                        <polygon points="-3,-5 3,-5 2,-1 -2,-1" fill="#ff9f00" />
+
+                        {/* Left Torch */}
+                        <line x1="-24" y1="-2" x2="-24" y2="-8" stroke="#4b5563" strokeWidth="1" />
+                        <circle cx="-24" cy="-10" r="1.8" fill="#ff7700" className="map-flicker" />
+                        {/* Right Torch */}
+                        <line x1="24" y1="-2" x2="24" y2="-8" stroke="#4b5563" strokeWidth="1" />
+                        <circle cx="24" cy="-10" r="1.8" fill="#ff7700" className="map-flicker" />
+                      </g>
+                    )}
+
+                    {dest.visualName === "portal" && (
+                      <g>
+                        <path d="M-40,10 L0,-10 L40,10 L0,30 Z" fill="#14101d" stroke="#241c30" />
+                        <circle cx="0" cy="-10" r="22" stroke="#7c3aed" strokeWidth="1.5" fill="none" strokeDasharray="24 8" className="map-float" />
+                        <circle cx="0" cy="-10" r="16" stroke="#a78bfa" strokeWidth="0.8" fill="none" strokeDasharray="12 4" className="map-pulse" />
+                        <circle cx="-12" cy="-22" r="1.2" fill="#a78bfa" className="map-flicker" />
+                        <circle cx="12" cy="-26" r="0.8" fill="#ddd6fe" className="map-pulse" />
+                        <circle cx="-4" cy="-35" r="1" fill="#a78bfa" className="map-float" />
+
+                        {/* Floating Wizard Sprite */}
+                        <g transform="translate(24, -6)" className="map-float">
+                          <path d="M-4,8 L0,-4 L4,8 Z" fill="#4c1d95" stroke="#7c3aed" strokeWidth="0.5" />
+                          <polygon points="-5,-4 0,-12 5,-4" fill="#6d28d9" />
+                          <circle cx="0" cy="-4" r="1.8" fill="#ddd6fe" />
+                          <line x1="-5" y1="-8" x2="-5" y2="10" stroke="#7c3aed" strokeWidth="0.8" />
+                          <circle cx="-5" cy="-9.5" r="1.5" fill="#a78bfa" className="map-pulse" />
+                        </g>
+                      </g>
+                    )}
+                  </g>
+
+                  {/* Text Labels under locations */}
+                  <g transform="translate(0, 36)">
+                    <rect x="-50" y="-10" width="100" height="20" rx="3" fill="#101010" stroke="#242424" strokeWidth="1" />
+                    <text 
+                      textAnchor="middle" 
+                      y="3" 
+                      fill={isHovered && !isLegendsLocked ? "#ffffff" : "#a3a3a3"} 
+                      fontSize="7" 
+                      fontFamily="monospace" 
+                      letterSpacing="1"
+                      fontWeight="bold"
+                      className="transition-colors duration-200"
+                    >
+                      {dest.name}
+                    </text>
+                    
+                    {/* Lock Indicator icon overlay */}
+                    {isLegendsLocked && (
+                      <g transform="translate(40, -15)">
+                        <circle cx="0" cy="0" r="7" fill="#151515" stroke="#242424" />
+                        <foreignObject x="-4" y="-5.5" width="8" height="11">
+                          <Lock className="text-[#8a8a9d]" size={8} />
+                        </foreignObject>
+                      </g>
+                    )}
+                  </g>
                 </g>
+
+                {/* Flat transparent interactive hitbox to prevent nested flickering */}
+                <ellipse cx="0" cy="15" rx="55" ry="32" fill="transparent" className="pointer-events-auto cursor-pointer" />
               </g>
             );
           })}
         </svg>
+      </div>
 
-        {/* Floating Location HUD Description Cards */}
-        {destinations.map((dest, idx) => {
-          const isHovered = hoveredDest?.id === dest.id;
-          const isLegendsLocked = dest.id === "achievements" && isAchievementsLocked;
-          const theme = themeColors[dest.visualName] || themeColors.forest;
-
-          return (
-            <div
-              key={`card-${dest.id}`}
-              onMouseEnter={() => handleNodeHover(dest, idx)}
-              onMouseLeave={() => handleNodeHover(null, -1)}
-              onClick={() => handleNodeClick(dest)}
-              className={`absolute z-35 pointer-events-auto cursor-pointer p-3 rounded w-[225px] transition-all duration-300 select-none bg-[#07070a]/92 border backdrop-blur-md flex flex-col space-y-1.5 ${
-                isLegendsLocked 
-                  ? "opacity-50 hover:opacity-100 border-neutral-800" 
-                  : isHovered 
-                    ? `${theme.borderHover} ${theme.glow}` 
-                    : "border-neutral-800/80"
-              }`}
-              style={{
-                left: `${dest.x}px`,
-                top: dest.id === "achievements" ? `${dest.y + 16}px` : `${dest.y - 12}px`,
-                transform: dest.id === "achievements" ? "translate(-50%, 0)" : "translate(-50%, -100%)",
-              }}
-            >
-              {/* Header block with Icon, title and category */}
-              <div className="flex items-center space-x-2.5 border-b border-neutral-800/40 pb-1.5">
-                <div className={`p-1 rounded bg-[#020204]/80 border ${isLegendsLocked ? "border-neutral-800" : theme.border}`}>
-                  {getDestinationIcon(dest.visualName, isHovered)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className={`font-rajdhani text-xs font-bold tracking-wider truncate uppercase -mb-0.5 ${
-                    isLegendsLocked ? "text-neutral-500" : theme.text
-                  }`}>
-                    {dest.name}
-                  </h3>
-                  <span className="text-[7.5px] font-mono text-neutral-500 uppercase tracking-widest block">
-                    {dest.purpose}
-                  </span>
-                </div>
-                
-                {/* Floating Node marker helper inside card header */}
-                <div className="w-1.5 h-1.5 rounded-sm transform rotate-45 border" style={{ borderColor: isLegendsLocked ? "#444" : theme.color, backgroundColor: isLegendsLocked ? "transparent" : theme.color }} />
-              </div>
-              
-              {/* Main short description */}
-              <p className="text-[9px] text-[#a3a3c2] leading-normal font-sans uppercase">
-                {dest.id === "achievements" && isAchievementsLocked 
-                  ? "Locked: Complete Ascent Trail to unlock this area."
-                  : dest.description
-                }
-              </p>
-
-              {/* Special Quest details */}
-              {dest.detailLabel && !isLegendsLocked && (
-                <div className="pt-1 flex justify-between items-center text-[7.5px] font-mono border-t border-neutral-900/60">
-                  <span className="text-neutral-500 uppercase">{dest.detailLabel}:</span>
-                  <span className={`${theme.text} font-bold uppercase`}>{dest.detailValue}</span>
-                </div>
-              )}
-
-              {/* Locked Indicator details */}
-              {isLegendsLocked && (
-                <div className="pt-1.5 flex flex-col space-y-0.5 border-t border-neutral-900/60 text-left">
-                  <div className="flex items-center space-x-1 text-[8px] font-mono text-[#a3a3a3]">
-                    <Lock size={8} className="text-[#a3a3a3]" />
-                    <span className="uppercase font-bold">Locked</span>
-                  </div>
-                  <span className="text-[7.5px] font-sans text-neutral-500 uppercase leading-tight">
-                    Complete Ascent Trail to unlock this area.
-                  </span>
-                </div>
+      {/* FLOATING HOVER CARD PANEL */}
+      {hoveredDest && (
+        <div 
+          className="absolute z-30 pointer-events-none bg-[#151515] border border-[#242424] p-4 rounded w-[240px] shadow-2xl animate-[fadeIn_0.15s_ease-out] select-none left-1/2 -translate-x-1/2 bottom-[100px]"
+        >
+          <div className="border-b border-[#242424] pb-2 mb-2">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-mono tracking-widest text-[#a3a3a3] uppercase">
+                {hoveredDest.purpose}
+              </span>
+              {hoveredDest.id === "achievements" && isAchievementsLocked && (
+                <span className="text-[8px] font-mono bg-red-950/50 text-red-500 border border-red-900 px-1 rounded flex items-center space-x-0.5">
+                  <Lock size={6} />
+                  <span>LOCKED</span>
+                </span>
               )}
             </div>
-          );
-        })}
+            <h2 className="text-sm font-mono tracking-wide text-white uppercase mt-0.5">
+              {hoveredDest.name}
+            </h2>
+          </div>
+          
+          <p className="text-[10px] text-[#a3a3a3] leading-normal uppercase">
+            {hoveredDest.id === "achievements" && isAchievementsLocked 
+              ? "Walk the Ascent Trail (Journey) first to unlock this location."
+              : hoveredDest.description
+            }
+          </p>
 
-        {/* Center platform static builder badge */}
-        <div
-          className="absolute bg-[#07070a]/92 border border-neutral-800/80 p-2 rounded w-[130px] flex flex-col items-center justify-center text-center select-none backdrop-blur-sm shadow-xl"
-          style={{
-            left: "511px",
-            top: "390px",
-            transform: "translateX(-50%)"
-          }}
-        >
-          <span className="font-rajdhani text-[9px] font-bold text-white tracking-widest uppercase -mb-0.5">
-            THE BUILDER
-          </span>
-          <span className="text-[6px] font-sans text-neutral-500 uppercase tracking-wider block">
-            Your journey starts here.
-          </span>
+          {hoveredDest.detailLabel && !isAchievementsLocked && (
+            <div className="mt-3 pt-2 border-t border-[#242424]/60">
+              <span className="text-[8px] font-mono text-text-secondary/60 uppercase tracking-wider block">
+                {hoveredDest.detailLabel}
+              </span>
+              <span className="text-[10px] font-mono text-[#ffffff] uppercase font-bold tracking-wider">
+                {hoveredDest.detailValue}
+              </span>
+            </div>
+          )}
         </div>
+      )}
+
+      {/* TOP LEFT OVERLAY: LOGO */}
+      <div className="absolute top-6 left-6 z-20 flex flex-col pointer-events-none select-none">
+        <h1 className="text-xl font-mono tracking-[0.25em] text-white">SHIVAM'S WORLD</h1>
+        <p className="text-[9px] font-mono tracking-[0.18em] text-[#a3a3a3] uppercase mt-0.5">Explore. Learn. Build. Grow.</p>
       </div>
 
-      {/* TOP LEFT OVERLAY: Sleek logo banner */}
-      <div className="absolute top-6 left-6 z-20 flex items-center space-x-3 select-none pointer-events-none">
-        {/* Modern geometric hex logo */}
-        <div className="w-8 h-8 rounded border border-neutral-800 bg-[#0c0c12]/60 flex items-center justify-center text-white backdrop-blur-sm">
-          <svg className="w-5 h-5 text-neutral-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-          </svg>
-        </div>
-        <div className="flex flex-col">
-          <h1 className="text-sm font-mono tracking-[0.25em] text-white font-bold leading-none">SHIVAM'S WORLD</h1>
-          <span className="text-[8px] font-mono tracking-[0.2em] text-[#8a8a9d] uppercase mt-1">Explore. Learn. Build. Grow.</span>
-        </div>
-      </div>
-
-      {/* TOP RIGHT OVERLAY: High-fidelity audio and settings controller */}
-      <div className="absolute top-6 right-6 z-20 flex items-center space-x-3.5 bg-[#0a0a0f]/90 border border-neutral-800/80 px-4 py-2 rounded shadow-lg backdrop-blur-md">
-        <div className="flex items-center space-x-1.5 text-[9px] font-mono text-neutral-400 font-bold uppercase tracking-wider">
-          <span>SOUND</span>
-          <button 
-            onClick={toggleMute}
-            className="text-neutral-400 hover:text-white transition-colors cursor-pointer"
-          >
-            {muted ? <VolumeX size={13} /> : <Volume2 size={13} />}
-          </button>
-        </div>
-
-        {/* ON / OFF Switch toggle */}
-        <button
+      {/* TOP RIGHT OVERLAY: AUDIO CONTROL HUD */}
+      <div className="absolute top-6 right-6 z-20 flex items-center space-x-4 bg-[#101010] border border-[#242424] px-4 py-2.5 rounded shadow-lg">
+        {/* Mute toggle */}
+        <button 
           onClick={toggleMute}
-          className={`px-2.5 py-0.5 rounded text-[8px] font-mono font-bold tracking-widest transition-all cursor-pointer ${
-            !muted 
-              ? "bg-[#eab308] text-black shadow-[0_0_8px_rgba(234,179,8,0.3)]" 
-              : "bg-neutral-800 text-neutral-500"
-          }`}
+          className="text-[#a3a3a3] hover:text-white transition-colors cursor-pointer"
         >
-          {muted ? "OFF" : "ON"}
+          {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
         </button>
 
-        {/* Volume slider details */}
-        <div className="flex items-center space-x-2.5 border-l border-neutral-800/60 pl-3">
-          <span className="text-[8px] font-mono text-neutral-500 uppercase tracking-widest">VOLUME</span>
+        {/* Volume slider */}
+        <div className="flex items-center space-x-2">
           <input 
             type="range" 
             min="0" 
@@ -691,30 +641,27 @@ export const MainHubScene: React.FC = () => {
             step="0.05"
             value={volume}
             onChange={(e) => changeVolume(parseFloat(e.target.value))}
-            className="w-16 h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-white"
+            className="w-16 h-1 bg-[#242424] rounded-lg appearance-none cursor-pointer accent-white"
           />
-          <span className="text-[9px] font-mono text-neutral-400 w-6 text-right">
-            {Math.round(volume * 100)}%
-          </span>
         </div>
 
-        {/* Settings wheel cog */}
-        <div className="relative border-l border-neutral-800/60 pl-3 flex items-center">
+        {/* Settings Button */}
+        <div className="relative">
           <button 
             onClick={() => setShowSettings(!showSettings)}
-            className="text-neutral-400 hover:text-white transition-colors cursor-pointer"
+            className="text-[#a3a3a3] hover:text-white transition-colors cursor-pointer"
           >
-            <Settings size={13} />
+            <Settings size={15} />
           </button>
           
           {showSettings && (
-            <div className="absolute right-0 top-6 mt-2 w-32 bg-[#0c0c12] border border-neutral-800 rounded shadow-xl py-1 z-30 text-right animate-[fadeIn_0.1s_ease-out]">
+            <div className="absolute right-0 mt-3 w-32 bg-[#151515] border border-[#242424] rounded shadow-xl py-1 z-30 text-right animate-[fadeIn_0.1s_ease-out]">
               <button 
                 onClick={() => {
                   resetProgress();
                   setShowSettings(false);
                 }}
-                className="w-full text-right px-3 py-1.5 text-[8.5px] font-mono text-[#a3a3a3] hover:bg-neutral-900 hover:text-white transition-colors block cursor-pointer uppercase tracking-wider"
+                className="w-full text-right px-3 py-1.5 text-[9px] font-mono text-[#a3a3a3] hover:bg-[#101010] hover:text-white transition-colors block cursor-pointer uppercase"
               >
                 Reset Progress
               </button>
@@ -723,128 +670,55 @@ export const MainHubScene: React.FC = () => {
         </div>
       </div>
 
-      {/* BOTTOM LEFT OVERLAY: Sleek mockup-accurate player card */}
+      {/* BOTTOM LEFT OVERLAY: PLAYER CARD */}
       <div className="absolute bottom-6 left-6 z-20 pointer-events-none select-none">
-        <div className="bg-[#0a0a0f]/90 border border-neutral-800/80 p-4 rounded w-[280px] shadow-2xl backdrop-blur-md flex flex-col space-y-3">
-          {/* Top row: Avatar picture and name info */}
-          <div className="flex items-center space-x-3.5 pb-2.5 border-b border-neutral-800/50">
-            {/* Round profile image picture generated */}
-            <div className="w-12 h-12 rounded-md border border-neutral-800 overflow-hidden bg-neutral-900 flex-shrink-0">
-              <img 
-                src="/shivam_avatar.png" 
-                alt="Shivam Singh Headshot" 
-                className="w-full h-full object-cover" 
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-xs font-mono font-bold text-white uppercase tracking-wider truncate">Shivam Singh</h2>
-              <p className="text-[7.5px] text-neutral-400 font-sans leading-tight mt-0.5 uppercase tracking-wide">
-                Student Founder | Developer | Entrepreneur
-              </p>
-            </div>
+        <div className="bg-[#101010] border border-[#242424] p-4 rounded max-w-[280px] shadow-lg">
+          <div className="text-[8px] font-mono text-text-secondary/50 uppercase tracking-widest border-b border-[#242424]/40 pb-1 mb-2">
+            PLAYER PROFILE HUD
           </div>
-
-          {/* Middle row: Active quest status */}
-          <div className="flex flex-col space-y-1">
-            <span className="text-[7px] font-mono text-neutral-500 uppercase tracking-widest">CURRENT QUEST</span>
-            <div className="flex items-center space-x-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-              <span className="text-[9px] font-mono text-[#eab308] font-bold tracking-wider uppercase">
+          <div className="space-y-1.5">
+            <div>
+              <span className="text-[7px] font-mono text-[#a3a3a3] uppercase block">NAME</span>
+              <span className="text-[11px] font-mono font-bold text-white uppercase tracking-wider">Shivam Singh</span>
+            </div>
+            <div>
+              <span className="text-[7px] font-mono text-[#a3a3a3] uppercase block">ROLE</span>
+              <span className="text-[9px] text-[#a3a3a3] leading-tight block uppercase">
+                Student Founder | Developer | Entrepreneur
+              </span>
+            </div>
+            <div>
+              <span className="text-[7px] font-mono text-[#a3a3a3] uppercase block">CURRENT QUEST</span>
+              <span className="text-[9px] font-mono text-white font-bold tracking-wider uppercase block">
                 Building CollabKaro
               </span>
             </div>
           </div>
-
-          {/* Bottom row: Level / XP progress bar */}
-          <div className="flex items-center space-x-3 pt-1 border-t border-neutral-800/30">
-            {/* N Circle Badge */}
-            <div className="w-6 h-6 rounded-full bg-black border border-neutral-800/80 flex items-center justify-center text-[10px] font-bold text-white font-mono flex-shrink-0">
-              N
-            </div>
-            <div className="flex-1 space-y-1">
-              <div className="flex justify-between items-end text-[7px] font-mono text-neutral-500 uppercase tracking-wider">
-                <span className="text-white font-bold">LVL 12</span>
-                <span>2,450 / 5,000 XP</span>
-              </div>
-              <div className="w-full h-1 bg-neutral-950 border border-neutral-900/60 rounded-full overflow-hidden">
-                <div className="h-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" style={{ width: "49%" }} />
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* BOTTOM CENTER OVERLAY: Sleek instruction helpers */}
-      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20 pointer-events-none select-none bg-[#0a0a0f]/90 border border-neutral-800/80 px-4 py-2 rounded flex items-center space-x-4 backdrop-blur-sm shadow-xl">
-        <div className="flex items-center space-x-1.5 text-[8.5px] font-mono text-neutral-400 uppercase tracking-widest">
-          {/* Custom Mouse Hover SVG */}
-          <svg className="w-3.5 h-3.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="5" y="2" width="14" height="20" rx="7" />
-            <path d="M12 6v4" className="animate-pulse" />
-          </svg>
-          <span>Hover to discover</span>
+      {/* BOTTOM RIGHT OVERLAY: CONTROLS LEGEND */}
+      <div className="absolute bottom-6 right-6 z-20 pointer-events-none select-none text-right">
+        <div className="text-[9px] font-mono text-[#a3a3a3] uppercase tracking-widest leading-relaxed">
+          Hover to discover.
+          <br />
+          Click to explore.
         </div>
-        <div className="w-px h-3 bg-neutral-800" />
-        <div className="flex items-center space-x-1.5 text-[8.5px] font-mono text-neutral-400 uppercase tracking-widest">
-          {/* Custom Mouse Click SVG */}
-          <svg className="w-3.5 h-3.5 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <rect x="5" y="2" width="14" height="20" rx="7" />
-            <path d="M12 2v10M5 12h14" />
-            <path d="M9 6h2v3H9z" fill="currentColor" />
-          </svg>
-          <span>Click to explore</span>
-        </div>
-      </div>
-
-      {/* BOTTOM RIGHT OVERLAY: Navigation tip overlay */}
-      <div className="absolute bottom-6 right-6 z-20 pointer-events-none select-none">
-        <div className="bg-[#0a0a0f]/90 border border-neutral-800/80 p-3 rounded w-[220px] shadow-2xl backdrop-blur-md flex items-start space-x-2.5">
-          {/* Compass/Star SVG decoration */}
-          <div className="p-1 rounded bg-[#020204]/60 border border-neutral-800 mt-0.5 text-neutral-400">
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M16.2 7.8l-2 5.6-5.6 2 2-5.6 5.6-2z" />
-            </svg>
-          </div>
-          <div className="flex flex-col space-y-1">
-            <span className="text-[7.5px] font-mono text-neutral-500 uppercase tracking-widest block font-bold">
-              NAVIGATION TIP
-            </span>
-            <p className="text-[8.5px] font-sans text-neutral-300 leading-normal uppercase">
-              Every path has a story. Choose your destination.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* FLOATING VERTICAL CONTROLS (Right Edge) */}
-      <div className="absolute right-6 top-1/2 transform -translate-y-1/2 z-20 flex flex-col space-y-3">
-        {/* Map Guide button */}
-        <button className="w-12 h-12 rounded bg-[#0a0a0f]/90 border border-neutral-800/80 flex flex-col items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-500 transition-all cursor-pointer backdrop-blur-sm group">
-          <HelpCircle size={15} />
-          <span className="text-[5px] font-mono uppercase tracking-widest mt-1 block">GUIDE</span>
-        </button>
-
-        {/* Achievements button */}
-        <button className="w-12 h-12 rounded bg-[#0a0a0f]/90 border border-neutral-800/80 flex flex-col items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-500 transition-all cursor-pointer backdrop-blur-sm group">
-          <Trophy size={15} />
-          <span className="text-[5px] font-mono uppercase tracking-widest mt-1 block">TRIAL</span>
-        </button>
       </div>
 
       {/* CINEMATIC TRANSITION BANNER OVERLAY */}
       {transitioningTo && (
         <div className="fixed inset-0 bg-black z-50 flex flex-col justify-center items-center select-none animate-[fadeIn_0.3s_ease-out]">
           <div className="space-y-3 text-center">
-            <h2 className="text-[9px] font-mono tracking-[0.3em] uppercase text-neutral-500 animate-pulse">
+            <h2 className="text-[10px] font-mono tracking-[0.3em] uppercase text-text-secondary animate-pulse">
               INITIALIZING TRAVEL PATH
             </h2>
-            <h1 className="text-xl sm:text-2xl font-mono tracking-[0.2em] uppercase text-white font-bold animate-[textScale_1s_ease-out]">
+            <h1 className="text-2xl sm:text-3xl font-mono tracking-[0.2em] uppercase text-white font-bold animate-[textScale_1s_ease-out]">
               ENTERING {transitioningTo.name}...
             </h1>
             <div className="flex items-center justify-center space-x-1.5 pt-2">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-              <span className="text-[9px] font-mono text-[#a3a3a3] tracking-widest lowercase">establishing context lines...</span>
+              <span className="text-[10px] font-mono text-[#a3a3a3] tracking-widest lowercase">establishing context lines...</span>
             </div>
           </div>
         </div>
