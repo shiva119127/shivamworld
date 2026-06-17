@@ -311,7 +311,7 @@ export const MainHubScene: React.FC = () => {
       >
         <svg viewBox="0 0 1000 600" className="w-full h-full">
           {/* Background Compass Rose */}
-          <g opacity="0.12" pointer-events="none">
+          <g opacity="0.12" pointerEvents="none">
             {/* Outer Dial rotating clockwise */}
             <circle cx="500" cy="300" r="140" fill="none" stroke="#ffffff" strokeWidth="1" strokeDasharray="4 8" className="compass-dial-cw" />
             <circle cx="500" cy="300" r="120" fill="none" stroke="#ffffff" strokeWidth="0.5" strokeDasharray="40 10 5 10" className="compass-dial-cw" />
@@ -328,7 +328,7 @@ export const MainHubScene: React.FC = () => {
           </g>
 
           {/* Background Drifting Clouds */}
-          <g opacity="0.06" pointer-events="none">
+          <g opacity="0.06" pointerEvents="none">
             {/* Cloud 1 */}
             <g className="cloud-drift-1" transform="translate(0, 80)">
               <path d="M 0 20 A 12 12 0 0 1 15 8 A 15 15 0 0 1 40 8 A 12 12 0 0 1 55 20 A 8 8 0 0 1 55 28 Z" fill="#ffffff" />
@@ -364,7 +364,7 @@ export const MainHubScene: React.FC = () => {
           })}
 
           {/* Path Energy Sparks */}
-          <g pointer-events="none">
+          <g pointerEvents="none">
             {destinations.map((dest) => {
               const isLegendsLocked = dest.id === "achievements" && isAchievementsLocked;
               if (isLegendsLocked) return null; // Sparks don't flow to locked zones
