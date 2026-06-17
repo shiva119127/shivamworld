@@ -51,10 +51,14 @@ export const MainHubScene: React.FC = () => {
   // Map panning & zooming states
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [isZooming, setIsZooming] = useState(false);
   const zoomTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Set initial zoom on mount
+  useEffect(() => {
+    const initialScale = Math.min(window.innerWidth / 1000, window.innerHeight / 600) * 0.9;
+    setZoom(Math.max(0.7, Math.min(1.1, initialScale)));
+  }, []);
 
   // Cleanup zoom timeout
   useEffect(() => {
@@ -140,12 +144,10 @@ export const MainHubScene: React.FC = () => {
           y: -transitioningTo.y * scaleVal + window.innerHeight / 2
         });
       } else {
-        const initialScale = Math.min(window.innerWidth / 1000, window.innerHeight / 600) * 0.9;
-        const scaleVal = Math.max(0.7, Math.min(1.1, initialScale));
-        setZoom(scaleVal);
+        // Keep the map fixed at the center of the window
         setPan({
-          x: -(500 * scaleVal) + window.innerWidth / 2,
-          y: -(300 * scaleVal) + window.innerHeight / 2
+          x: window.innerWidth / 2 - 500,
+          y: window.innerHeight / 2 - 300
         });
       }
     };
@@ -183,45 +185,7 @@ export const MainHubScene: React.FC = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedIndex, transitioningTo]);
 
-  // Drag-to-pan mouse events
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (transitioningTo) return;
-    setIsDragging(true);
-    setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
-  };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || transitioningTo) return;
-    setPan({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y
-    });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  // Drag-to-pan touch events (mobile support)
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (transitioningTo) return;
-    if (e.touches.length === 1) {
-      setIsDragging(true);
-      const touch = e.touches[0];
-      setDragStart({ x: touch.clientX - pan.x, y: touch.clientY - pan.y });
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || transitioningTo) return;
-    if (e.touches.length === 1) {
-      const touch = e.touches[0];
-      setPan({
-        x: touch.clientX - dragStart.x,
-        y: touch.clientY - dragStart.y
-      });
-    }
-  };
 
   // Mouse wheel zoom support
   const handleWheel = (e: WheelEvent) => {
@@ -326,14 +290,7 @@ export const MainHubScene: React.FC = () => {
   return (
     <div 
       ref={mapWrapperRef}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleMouseUp}
-      className={`relative w-full h-screen overflow-hidden bg-[#050505] select-none text-white font-sans ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+      className="relative w-full h-screen overflow-hidden bg-[#050505] select-none text-white font-sans"
     >
       {/* Background stars / slow moving drift fog */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(40,40,40,0.15)_0%,transparent_70%)] pointer-events-none z-0" />
@@ -346,7 +303,7 @@ export const MainHubScene: React.FC = () => {
       <div 
         style={{
           transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
-          transition: (isDragging || isZooming) ? "none" : "transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)",
+          transition: isZooming ? "none" : "transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)",
           transformOrigin: "center center",
           willChange: "transform"
         }}
